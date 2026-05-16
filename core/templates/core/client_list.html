@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Clients - HustleBuddy</title>
+</head>
+<body>
+    <main>
+        <h1>Clients</h1>
+        <p>Logged in as {{ request.user.username }}</p>
+
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit">Log out</button>
+        </form>
+
+        <p><a href="{% url 'add_client' %}">Add client</a></p>
+
+        {% if clients %}
+            <ul>
+                {% for client in clients %}
+                    <li>
+                        <strong>{{ client.name }}</strong>
+                        {% if client.contact %} - {{ client.contact }}{% endif %}
+                        {% if client.service_type %} - {{ client.service_type }}{% endif %}
+                        {% if client.notes %} - {{ client.notes }}{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No clients yet.</p>
+        {% endif %}
+    </main>
+</body>
+</html>

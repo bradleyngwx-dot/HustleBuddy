@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import ClientForm
+from .forms import ClientForm, UserSignUpForm
 from .models import Client
 
 @login_required
@@ -24,3 +24,16 @@ def client_list(request):
     clients = Client.objects.filter(owner=request.user)
 
     return render(request, "core/client_list.html", {"clients": clients})
+
+def signup(request):
+    if request.method == "POST":
+        form = UserSignUpForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            return redirect("login")
+
+    else:
+        form = UserSignUpForm()
+
+    return render(request, "core/signup.html", {"form": form})
