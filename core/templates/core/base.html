@@ -1,0 +1,35 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}HustleBuddy{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <a class="site-logo" href="{% url 'client_list' %}">HustleBuddy</a>
+
+        {% if user.is_authenticated %}
+            <nav class="site-nav">
+                <a href="{% url 'client_list' %}">Clients</a>
+                <a href="{% url 'add_client' %}">Add Client</a>
+            </nav>
+
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit">Log out</button>
+            </form>
+        {% endif %}
+    </header>
+
+    <main class="page-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{% static 'core/js/script.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

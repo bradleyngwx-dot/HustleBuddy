@@ -1,0 +1,41 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ client.name }} - HustleBuddy{% endblock %}
+
+{% block content %}
+    <p><a href="{% url 'client_list' %}">Back to clients</a></p>
+
+    <h1>{{ client.name }}</h1>
+
+    <section>
+        <h2>Basic Details</h2>
+        <p><strong>Contact Number:</strong> {{ client.contact|default:"No contact information added." }}</p>
+        <p><strong>Service:</strong> {{ client.service_type|default:"No service type added." }}</p>
+        <p><strong>Date Created:</strong> {{ client.created_at|date:"M d, Y" }}</p>
+    </section>
+
+    <section>
+        <h2>Notes</h2>
+        <p>{{ client.notes|default:"No notes added yet." }}</p>
+    </section>
+
+    <section>
+        <h2>Upcoming Appointments</h2>
+        <p>No upcoming appointments yet.</p>
+    </section>
+
+    <section>
+        <h2>Hours Worked</h2>
+        <p>No hours recorded yet.</p>
+    </section>
+
+    <section>
+        <h2>Payment</h2>
+        <p>No payment records yet.</p>
+    </section>
+
+    <section>
+        <h2>Reminders</h2>
+        <p>No reminders yet.</p>
+    </section>
+{% endblock %}

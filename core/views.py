@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .forms import ClientForm, UserSignUpForm
 from .models import Client
@@ -24,6 +24,12 @@ def client_list(request):
     clients = Client.objects.filter(owner=request.user)
 
     return render(request, "core/client_list.html", {"clients": clients})
+
+@login_required
+def client_detail(request, client_id):
+    client = get_object_or_404(Client, id=client_id, owner=request.user)
+
+    return render(request, "core/client_detail.html", {"client": client})
 
 def signup(request):
     if request.method == "POST":

@@ -1,35 +1,27 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Clients - HustleBuddy</title>
-</head>
-<body>
-    <main>
-        <h1>Clients</h1>
-        <p>Logged in as {{ request.user.username }}</p>
+{% extends "core/base.html" %}
 
-        <form method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button type="submit">Log out</button>
-        </form>
+{% block title %}Clients - HustleBuddy{% endblock %}
 
-        <p><a href="{% url 'add_client' %}">Add client</a></p>
+{% block content %}
+    <h1>Clients</h1>
+    <p>Logged in as {{ request.user.username }}</p>
 
-        {% if clients %}
-            <ul>
-                {% for client in clients %}
-                    <li>
-                        <strong>{{ client.name }}</strong>
-                        {% if client.contact %} - {{ client.contact }}{% endif %}
-                        {% if client.service_type %} - {{ client.service_type }}{% endif %}
-                        {% if client.notes %} - {{ client.notes }}{% endif %}
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>No clients yet.</p>
-        {% endif %}
-    </main>
-</body>
-</html>
+    <p><a href="{% url 'add_client' %}">Add client</a></p>
+
+    {% if clients %}
+        <ul>
+            {% for client in clients %}
+                <li>
+                    <strong>
+                        <a href="{% url 'client_detail' client.id %}">{{ client.name }}</a>
+                    </strong>
+                    {% if client.contact %} - {{ client.contact }}{% endif %}
+                    {% if client.service_type %} - {{ client.service_type }}{% endif %}
+                    {% if client.notes %} - {{ client.notes }}{% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No clients added yet.</p>
+    {% endif %}
+{% endblock %}
