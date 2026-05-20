@@ -1,0 +1,26 @@
+/* Project styles live here. Your frontend partner can replace or extend this file. */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+.site-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #ddd;
+}
+
+.site-logo {
+    font-weight: bold;
+}
+
+.site-nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.page-content {
+    padding: 1rem;
+}

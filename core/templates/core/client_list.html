@@ -1,0 +1,27 @@
+{% extends "core/base.html" %}
+
+{% block title %}Clients - HustleBuddy{% endblock %}
+
+{% block content %}
+    <h1>Clients</h1>
+    <p>Logged in as {{ request.user.username }}</p>
+
+    <p><a href="{% url 'add_client' %}">Add client</a></p>
+
+    {% if clients %}
+        <ul>
+            {% for client in clients %}
+                <li>
+                    <strong>
+                        <a href="{% url 'client_detail' client.id %}">{{ client.name }}</a>
+                    </strong>
+                    {% if client.contact %} - {{ client.contact }}{% endif %}
+                    {% if client.service_type %} - {{ client.service_type }}{% endif %}
+                    {% if client.notes %} - {{ client.notes }}{% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No clients added yet.</p>
+    {% endif %}
+{% endblock %}
