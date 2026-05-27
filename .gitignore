@@ -1,0 +1,18 @@
+# Virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Local database
+db.sqlite3
+
+# Environment variables / secrets
+.env
+
+# VS Code settings, optional
+.vscode/
+
+# Django collected static files, later if needed
+staticfiles/

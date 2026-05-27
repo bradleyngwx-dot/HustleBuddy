@@ -1,0 +1,42 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Add New Client</h1>
+    <a href="{% url 'client_list' %}" class="btn btn-secondary">Cancel</a>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+            <div style="color: var(--red-danger); margin-bottom: 16px;">
+                Please correct the errors below.
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="name">Client Name</label>
+            <input type="text" name="name" id="name" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label for="contact">Contact Email/Phone</label>
+            <input type="text" name="contact" id="contact" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label for="service_type">Service Type</label>
+            <input type="text" name="service_type" id="service_type" class="form-control" placeholder="e.g., Web Design, Consulting" required>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea name="notes" id="notes" class="form-control" placeholder="Any specific requirements or project details..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Client</button>
+    </form>
+</div>
+{% endblock %}

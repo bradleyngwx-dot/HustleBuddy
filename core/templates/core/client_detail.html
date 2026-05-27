@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ client.name }}</h1>
+        <span class="badge badge-success">{{ client.service_type }}</span>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <a href="{% url 'edit_client' client.id %}" class="btn btn-secondary">Edit</a>
+        <a href="{% url 'delete_client' client.id %}" class="btn btn-danger">Delete</a>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Contact Info -->
+    <div class="card">
+        <h3 style="margin-bottom: 16px;">Basic Details</h3>
+        <p><strong>Contact:</strong> {{ client.contact }}</p>
+    </div>
+
+    <!-- Notes -->
+    <div class="card">
+        <h3 style="margin-bottom: 16px;">Notes</h3>
+        <p>{{ client.notes|default:"No notes provided." }}</p>
+    </div>
+
+    <!-- Upcoming Appointments (Placeholder) -->
+    <div class="card" style="border-left: 4px solid var(--blue-primary);">
+        <h3 style="margin-bottom: 16px;">Upcoming Appointments</h3>
+        <p style="color: var(--text-muted);">No upcoming appointments scheduled.</p>
+    </div>
+
+    <!-- Reminders (Placeholder) -->
+    <div class="card" style="border-left: 4px solid var(--yellow-warning);">
+        <h3 style="margin-bottom: 16px;">Reminders</h3>
+        <p style="color: var(--text-muted);">No urgent reminders.</p>
+    </div>
+
+    <!-- Hours Worked (Placeholder) -->
+    <div class="card">
+        <h3 style="margin-bottom: 16px;">Hours Worked</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: var(--navy-base);">0 <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">hrs</span></p>
+    </div>
+
+    <!-- Payments (Placeholder) -->
+    <div class="card">
+        <h3 style="margin-bottom: 16px;">Total Billed</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: var(--green-success);">$0.00</p>
+    </div>
+</div>
+{% endblock %}
