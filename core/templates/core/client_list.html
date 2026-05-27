@@ -18,6 +18,7 @@
                     {% if client.contact %} - {{ client.contact }}{% endif %}
                     {% if client.service_type %} - {{ client.service_type }}{% endif %}
                     {% if client.notes %} - {{ client.notes }}{% endif %}
+                    - <a href="{% url 'edit_client' client.id %}">Edit</a>
                 </li>
             {% endfor %}
         </ul>

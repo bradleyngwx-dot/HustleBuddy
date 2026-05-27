@@ -15,6 +15,7 @@
         {% if user.is_authenticated %}
             <nav class="site-nav">
                 <a href="{% url 'client_list' %}">Clients</a>
+                <a href="{% url 'schedule' %}">Schedule</a>
                 <a href="{% url 'add_client' %}">Add Client</a>
             </nav>
 
