@@ -1,0 +1,60 @@
+{% extends "core/base.html" %}
+
+{% block title %}Schedule - HustleBuddy{% endblock %}
+
+{% block content %}
+    <h1>Schedule</h1>
+
+    <form method="get">
+        <label for="year">Year</label>
+        <input type="number" id="year" name="year" min="2000" max="2100" value="{{ selected_year }}">
+
+        <label for="month">Month</label>
+        <select id="month" name="month">
+            <option value="">Any month</option>
+            <option value="1" {% if selected_month == "1" %}selected{% endif %}>January</option>
+            <option value="2" {% if selected_month == "2" %}selected{% endif %}>February</option>
+            <option value="3" {% if selected_month == "3" %}selected{% endif %}>March</option>
+            <option value="4" {% if selected_month == "4" %}selected{% endif %}>April</option>
+            <option value="5" {% if selected_month == "5" %}selected{% endif %}>May</option>
+            <option value="6" {% if selected_month == "6" %}selected{% endif %}>June</option>
+            <option value="7" {% if selected_month == "7" %}selected{% endif %}>July</option>
+            <option value="8" {% if selected_month == "8" %}selected{% endif %}>August</option>
+            <option value="9" {% if selected_month == "9" %}selected{% endif %}>September</option>
+            <option value="10" {% if selected_month == "10" %}selected{% endif %}>October</option>
+            <option value="11" {% if selected_month == "11" %}selected{% endif %}>November</option>
+            <option value="12" {% if selected_month == "12" %}selected{% endif %}>December</option>
+        </select>
+
+        <label for="day">Day</label>
+        <input type="number" id="day" name="day" min="1" max="31" value="{{ selected_day }}">
+
+        <button type="submit">Apply</button>
+        <a href="{% url 'schedule' %}">Clear</a>
+    </form>
+
+    {% if appointments %}
+        <ul>
+            {% for appointment in appointments %}
+                <li>
+                    <strong>{{ appointment.title }}</strong>
+                    - {{ appointment.date }}
+                    at {{ appointment.start_time }}
+                    {% if appointment.end_time %} to {{ appointment.end_time }}{% endif %}
+                    - {{ appointment.get_status_display }}
+                    <br>
+                    Client:
+                    <a href="{% url 'client_detail' appointment.client.id %}">
+                        {{ appointment.client.name }}
+                    </a>
+                    {% if appointment.notes %}
+                        <br>
+                        Notes: {{ appointment.notes }}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No appointments scheduled yet.</p>
+    {% endif %}
+{% endblock %}

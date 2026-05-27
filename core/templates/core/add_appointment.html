@@ -1,0 +1,15 @@
+{% extends "core/base.html" %}
+
+{% block title %}Add appointment - HustleBuddy{% endblock %}
+
+{% block content %}
+    <h1>Add appointment for {{ client.name }}</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {% include "core/_form_errors.html" %}
+        <button type="submit">Save appointment</button>
+    </form>
+
+    <p><a href="{% url 'client_detail' client.id %}">Back to client profile</a></p>
+{% endblock %}

@@ -6,7 +6,7 @@
     <h1>Add client</h1>
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+        {% include "core/_form_errors.html" %}
         <button type="submit">Save client</button>
     </form>
     <p><a href="{% url 'client_list' %}">Back to clients</a></p>

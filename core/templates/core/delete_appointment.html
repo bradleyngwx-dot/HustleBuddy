@@ -1,0 +1,16 @@
+{% extends "core/base.html" %}
+
+{% block title %}Delete appointment - HustleBuddy{% endblock %}
+
+{% block content %}
+    <h1>Delete appointment</h1>
+    <p>Are you sure you want to delete <strong>{{ appointment.title }}</strong>?</p>
+    <p>This action cannot be undone.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Yes, delete appointment</button>
+    </form>
+
+    <p><a href="{% url 'client_detail' appointment.client.id %}">Cancel</a></p>
+{% endblock %}

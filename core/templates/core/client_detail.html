@@ -21,7 +21,26 @@
 
     <section>
         <h2>Upcoming Appointments</h2>
-        <p>No upcoming appointments yet.</p>
+        <p><a href="{% url 'add_appointment' client.id %}">Add appointment</a></p>
+
+        {% if client.appointments.all %}
+            <ul>
+                {% for appointment in client.appointments.all %}
+                    <li>
+                        <strong>{{ appointment.title }}</strong>
+                        - {{ appointment.date }}
+                        at {{ appointment.start_time }}
+                        {% if appointment.end_time %} to {{ appointment.end_time }}{% endif %}
+                        - {{ appointment.get_status_display }}
+                        {% if appointment.notes %} - {{ appointment.notes }}{% endif %}
+                        - <a href="{% url 'edit_appointment' appointment.id %}">Edit</a>
+                        - <a href="{% url 'delete_appointment' appointment.id %}">Delete</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No upcoming appointments yet.</p>
+        {% endif %}
     </section>
 
     <section>
@@ -38,4 +57,10 @@
         <h2>Reminders</h2>
         <p>No reminders yet.</p>
     </section>
+    
+    <p>
+        <a href="{% url 'edit_client' client.id %}">Edit client</a>
+        |
+        <a href="{% url 'delete_client' client.id %}">Delete client</a>
+    </p>
 {% endblock %}
