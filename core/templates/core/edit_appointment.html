@@ -1,0 +1,15 @@
+{% extends "core/base.html" %}
+
+{% block title %}Edit appointment - HustleBuddy{% endblock %}
+
+{% block content %}
+    <h1>Edit appointment</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {% include "core/_form_errors.html" %}
+        <button type="submit">Save changes</button>
+    </form>
+
+    <p><a href="{% url 'client_detail' appointment.client.id %}">Cancel</a></p>
+{% endblock %}

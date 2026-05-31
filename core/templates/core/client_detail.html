@@ -27,8 +27,42 @@
 
     <!-- Upcoming Appointments (Placeholder) -->
     <div class="card" style="border-left: 4px solid var(--blue-primary);">
-        <h3 style="margin-bottom: 16px;">Upcoming Appointments</h3>
-        <p style="color: var(--text-muted);">No upcoming appointments scheduled.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0;">Upcoming Appointments</h3>
+            <a href="{% url 'add_appointment' client.id %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">+ Add</a>
+        </div>
+
+        {% if client.appointments.all %}
+            <ul style="list-style: none; padding: 0; margin: 0; max-height: 350px; overflow-y: auto; padding-right: 10px;">
+                {% for appointment in client.appointments.all %}
+                    <li style="padding: 16px 0; border-bottom: 1px solid var(--border-color); {% if forloop.last %}border-bottom: none; padding-bottom: 0;{% endif %}">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <strong style="color: var(--navy-base); font-size: 1.05rem;">{{ appointment.title }}</strong>
+                            <span class="badge">{{ appointment.get_status_display }}</span>
+                        </div>
+                        
+                        <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px;">
+                            📅 {{ appointment.date }} at {{ appointment.start_time }}
+                            {% if appointment.end_time %} to {{ appointment.end_time }}{% endif %}
+                        </div>
+
+                        {% if appointment.notes %}
+                            <div style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-main); background: var(--bg-light); padding: 8px 12px; border-radius: 6px;">
+                                {{ appointment.notes }}
+                            </div>
+                        {% endif %}
+
+                        <div style="display: flex; gap: 16px; font-size: 0.85rem; font-weight: 500;">
+                            <a href="{% url 'edit_appointment' appointment.id %}" style="color: var(--blue-primary); text-decoration: none;">✏️ Edit</a>
+                            <a href="{% url 'delete_appointment' appointment.id %}" style="color: var(--red-danger); text-decoration: none;">🗑️ Delete</a>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color: var(--text-muted); margin: 0;">No upcoming appointments scheduled.</p>
+        {% endif %}
     </div>
 
     <!-- Reminders (Placeholder) -->
