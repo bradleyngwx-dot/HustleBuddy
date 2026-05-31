@@ -81,6 +81,12 @@ def add_appointment(request, client_id):
             appointment = form.save(commit=False)
             appointment.client = client
             appointment.owner = request.user
+            
+            # --- THE FIX: Convert empty string to None before saving ---
+            if appointment.end_time == "":
+                appointment.end_time = None
+            # -----------------------------------------------------------
+
             appointment.save()
             return redirect("client_detail", client_id=client.id)
 
@@ -107,7 +113,15 @@ def edit_appointment(request, appointment_id):
         form = AppointmentForm(request.POST, instance=appointment)
 
         if form.is_valid():
-            form.save()
+            # Stop the save temporarily using commit=False
+            apt = form.save(commit=False)
+            
+            # --- THE FIX: Convert empty string to None before saving ---
+            if apt.end_time == "":
+                apt.end_time = None
+            # -----------------------------------------------------------
+                
+            apt.save()
             return redirect("client_detail", client_id=appointment.client.id)
 
     else:
