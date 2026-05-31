@@ -1,15 +1,59 @@
 {% extends "core/base.html" %}
 
-{% block title %}Edit appointment - HustleBuddy{% endblock %}
+{% block title %}Edit Appointment - HustleBuddy{% endblock %}
 
 {% block content %}
-    <h1>Edit appointment</h1>
+<div class="page-header">
+    <h1 class="page-title">Edit Appointment</h1>
+    <a href="{% url 'client_detail' appointment.client.id %}" class="btn btn-secondary">Cancel</a>
+</div>
 
+<div class="card" style="max-width: 600px;">
     <form method="post">
         {% csrf_token %}
+        
         {% include "core/_form_errors.html" %}
-        <button type="submit">Save changes</button>
-    </form>
 
-    <p><a href="{% url 'client_detail' appointment.client.id %}">Cancel</a></p>
+        <div class="form-group">
+            <label for="title">Appointment Title</label>
+            <input type="text" name="title" id="title" class="form-control" value="{{ form.title.value|default_if_none:appointment.title }}" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" name="date" id="date" class="form-control" value="{{ appointment.date|date:'Y-m-d' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select name="status" id="status" class="form-control" required>
+                    <option value="upcoming" {% if appointment.status == 'upcoming' %}selected{% endif %}>Upcoming</option>
+                    <option value="completed" {% if appointment.status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if appointment.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    <option value="rescheduled" {% if appointment.status == 'rescheduled' %}selected{% endif %}>Rescheduled</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label for="start_time">Start Time</label>
+                <input type="time" name="start_time" id="start_time" class="form-control" value="{{ appointment.start_time|time:'H:i' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="end_time">End Time (Optional)</label>
+                <input type="time" name="end_time" id="end_time" class="form-control" value="{{ appointment.end_time|time:'H:i'|default_if_none:'' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes (Optional)</label>
+            <textarea name="notes" id="notes" class="form-control">{{ form.notes.value|default_if_none:appointment.notes|default_if_none:'' }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Save Changes</button>
+    </form>
+</div>
 {% endblock %}

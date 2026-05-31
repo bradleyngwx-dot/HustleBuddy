@@ -1,22 +1,17 @@
 {% if form.non_field_errors %}
-    <div class="form-errors">
+    <div style="color: var(--red-danger); background: #FEE2E2; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
         {% for error in form.non_field_errors %}
-            <p>{{ error }}</p>
+            <p style="margin: 0; font-weight: 500;">{{ error }}</p>
         {% endfor %}
     </div>
 {% endif %}
 
 {% for field in form %}
-    <div class="form-field">
-        {{ field.label_tag }}
-        {{ field }}
-
-        {% if field.help_text %}
-            <small>{{ field.help_text }}</small>
-        {% endif %}
-
-        {% for error in field.errors %}
-            <p class="form-error">{{ error }}</p>
-        {% endfor %}
-    </div>
+    {% if field.errors %}
+        <div style="color: var(--red-danger); background: #FEE2E2; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+            {% for error in field.errors %}
+                <p style="margin: 0; font-size: 0.95rem;"><strong>{{ field.label }}:</strong> {{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
 {% endfor %}

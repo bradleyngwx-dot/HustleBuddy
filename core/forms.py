@@ -27,8 +27,8 @@ class ClientForm(forms.ModelForm):
 class AppointmentForm(forms.ModelForm):
     title = forms.CharField(max_length=100)
     date = forms.DateField(widget=forms.SelectDateWidget)
-    start_time = forms.ChoiceField(choices=TIME_CHOICES)
-    end_time = forms.ChoiceField(choices=[("", "---------")] + TIME_CHOICES, required=False)
+    # start_time = forms.ChoiceField(choices=TIME_CHOICES)
+    # end_time = forms.ChoiceField(choices=[("", "---------")] + TIME_CHOICES, required=False)
     notes = forms.CharField(widget=forms.Textarea, required=False)
 
     class Meta:
