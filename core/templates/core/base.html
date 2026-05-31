@@ -1,36 +1,44 @@
 {% load static %}
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}HustleBuddy{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HustleBuddy</title>
     <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
-    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <header class="site-header">
-        <a class="site-logo" href="{% url 'client_list' %}">HustleBuddy</a>
-
-        {% if user.is_authenticated %}
-            <nav class="site-nav">
-                <a href="{% url 'client_list' %}">Clients</a>
-                <a href="{% url 'schedule' %}">Schedule</a>
-                <a href="{% url 'add_client' %}">Add Client</a>
-            </nav>
-
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit">Log out</button>
-            </form>
-        {% endif %}
-    </header>
-
-    <main class="page-content">
-        {% block content %}{% endblock %}
-    </main>
+    {% if user.is_authenticated %}
+        <div class="dashboard-wrapper">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <a href="{% url 'client_list' %}" class="sidebar-logo">
+                    💼 Hustle<span>Buddy</span>
+                </a>
+                <ul class="nav-links">
+                    <li><a href="{% url 'client_list' %}">Clients</a></li>
+                    <li><a href="{% url 'add_client' %}">Add Client</a></li>
+                </ul>
+                <div style="margin-top: auto;">
+                    <form method="post" action="{% url 'logout' %}" class="logout-form">
+                        {% csrf_token %}
+                        <button type="submit">Log out</button>
+                    </form>
+                </div>
+            </aside>
+            
+            <!-- Main Area -->
+            <main class="main-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    {% else %}
+        <!-- Auth Layout for Login/Signup -->
+        <div class="auth-wrapper">
+            {% block auth_content %}{% endblock %}
+        </div>
+    {% endif %}
 
     <script src="{% static 'core/js/script.js' %}"></script>
-    {% block extra_js %}{% endblock %}
 </body>
 </html>

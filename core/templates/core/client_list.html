@@ -1,28 +1,26 @@
-{% extends "core/base.html" %}
-
-{% block title %}Clients - HustleBuddy{% endblock %}
+{% extends 'core/base.html' %}
 
 {% block content %}
-    <h1>Clients</h1>
-    <p>Logged in as {{ request.user.username }}</p>
+<div class="page-header">
+    <h1 class="page-title">My Clients</h1>
+    <a href="{% url 'add_client' %}" class="btn btn-primary">+ New Client</a>
+</div>
 
-    <p><a href="{% url 'add_client' %}">Add client</a></p>
-
-    {% if clients %}
-        <ul>
-            {% for client in clients %}
-                <li>
-                    <strong>
-                        <a href="{% url 'client_detail' client.id %}">{{ client.name }}</a>
-                    </strong>
-                    {% if client.contact %} - {{ client.contact }}{% endif %}
-                    {% if client.service_type %} - {{ client.service_type }}{% endif %}
-                    {% if client.notes %} - {{ client.notes }}{% endif %}
-                    - <a href="{% url 'edit_client' client.id %}">Edit</a>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No clients added yet.</p>
-    {% endif %}
+<div class="client-grid">
+    {% for client in clients %}
+        <div class="card client-card">
+            <h3>{{ client.name }}</h3>
+            <span class="badge">{{ client.service_type }}</span>
+            <p style="color: var(--text-muted); margin-bottom: 16px;">
+                Contact: {{ client.contact }}
+            </p>
+            <a href="{% url 'client_detail' client.id %}" class="btn btn-secondary btn-block">View Profile</a>
+        </div>
+    {% empty %}
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+            <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 16px;">No clients added yet. Let's grow your hustle!</p>
+            <a href="{% url 'add_client' %}" class="btn btn-primary">Add Your First Client</a>
+        </div>
+    {% endfor %}
+</div>
 {% endblock %}

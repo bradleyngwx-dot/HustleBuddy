@@ -1,13 +1,37 @@
-{% extends "core/base.html" %}
-
-{% block title %}Edit client - HustleBuddy{% endblock %}
+{% extends 'core/base.html' %}
 
 {% block content %}
-    <h1>Edit client</h1>
+<div class="page-header">
+    <h1 class="page-title">Edit Client: {{ client.name }}</h1>
+    <a href="{% url 'client_detail' client.id %}" class="btn btn-secondary">Cancel</a>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <!-- Form logic will be wired up by backend later -->
     <form method="post">
         {% csrf_token %}
-        {% include "core/_form_errors.html" %}
-        <button type="submit">Save changes</button>
+        
+        <div class="form-group">
+            <label for="name">Client Name</label>
+            <input type="text" name="name" id="name" class="form-control" value="{{ client.name }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="contact">Contact Email/Phone</label>
+            <input type="text" name="contact" id="contact" class="form-control" value="{{ client.contact }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="service_type">Service Type</label>
+            <input type="text" name="service_type" id="service_type" class="form-control" value="{{ client.service_type }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea name="notes" id="notes" class="form-control">{{ client.notes }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Client</button>
     </form>
-    <p><a href="{% url 'client_detail' client.id %}">Cancel</a></p>
+</div>
 {% endblock %}
