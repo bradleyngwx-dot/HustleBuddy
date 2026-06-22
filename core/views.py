@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .forms import AppointmentForm, ClientForm, UserSignUpForm
+from .forms import AppointmentForm, ClientForm
 from .models import Appointment, Client
 
 @login_required
@@ -56,19 +56,6 @@ def delete_client(request, client_id):
         return redirect("client_list")
 
     return render(request, "core/delete_client.html", {"client": client})
-
-def signup(request):
-    if request.method == "POST":
-        form = UserSignUpForm(request.POST)
-
-        if form.is_valid():
-            form.save()
-            return redirect("login")
-
-    else:
-        form = UserSignUpForm()
-
-    return render(request, "core/signup.html", {"form": form})
 
 @login_required
 def add_appointment(request, client_id):
