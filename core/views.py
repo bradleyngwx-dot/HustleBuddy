@@ -65,19 +65,6 @@ def delete_client(request, client_id):
 
     return render(request, "core/delete_client.html", {"client": client})
 
-def signup(request):
-    if request.method == "POST":
-        form = UserSignUpForm(request.POST)
-
-        if form.is_valid():
-            form.save()
-            return redirect("login")
-
-    else:
-        form = UserSignUpForm()
-
-    return render(request, "core/signup.html", {"form": form})
-
 @login_required
 def add_appointment(request, client_id):
     client = get_object_or_404(Client, id=client_id, owner=request.user)

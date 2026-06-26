@@ -1,0 +1,9 @@
+
+Thank you for signing up for HustleBuddy.
+
+Please confirm your email address by clicking the link below:
+
+{{ activate_url }}
+
+Once your email is verified, you will be able to log in and start using HustleBuddy.
+

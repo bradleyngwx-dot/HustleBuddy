@@ -20,7 +20,7 @@
                     <li><a href="{% url 'add_client' %}">Add Client</a></li>
                 </ul>
                 <div style="margin-top: auto;">
-                    <form method="post" action="{% url 'logout' %}" class="logout-form">
+                    <form method="post" action="{% url 'account_logout' %}" class="logout-form">
                         {% csrf_token %}
                         <button type="submit">Log out</button>
                     </form>
