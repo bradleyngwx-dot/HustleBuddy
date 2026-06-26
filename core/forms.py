@@ -1,6 +1,4 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 from .models import Appointment, Client
 
 TIME_CHOICES = [
@@ -9,15 +7,6 @@ TIME_CHOICES = [
     for minute in (0, 30)
 ]
 
-
-class UserSignUpForm(UserCreationForm):
-    username = forms.CharField(
-        max_length=15,
-        help_text="Required. 15 characters or fewer."
-        )
-    class Meta:
-        model = User
-        fields = ["username", "password1", "password2"]
 
 class ClientForm(forms.ModelForm):
     class Meta:
@@ -34,3 +23,19 @@ class AppointmentForm(forms.ModelForm):
     class Meta:
         model = Appointment
         fields = ["title", "date", "start_time", "end_time", "status", "notes"]
+
+from .models import TimeLog, Payment
+
+class TimeLogForm(forms.ModelForm):
+    class Meta:
+        model = TimeLog
+        fields = ['date', 'hours', 'description']
+
+class PaymentForm(forms.ModelForm):
+    class Meta:
+        model = Payment
+        fields = ['amount', 'date_issued', 'date_paid', 'status', 'description']
+        widgets = {
+            'date_issued': forms.DateInput(attrs={'type': 'date'}),
+            'date_paid': forms.DateInput(attrs={'type': 'date'}),
+        }

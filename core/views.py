@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .forms import AppointmentForm, ClientForm, UserSignUpForm
-from .models import Appointment, Client
+from .forms import AppointmentForm, ClientForm, UserSignUpForm, TimeLogForm, PaymentForm
+from .models import Appointment, Client, Payment
+from django.db.models import Sum
 
 @login_required
 def add_client(request):
@@ -28,8 +29,15 @@ def client_list(request):
 @login_required
 def client_detail(request, client_id):
     client = get_object_or_404(Client, id=client_id, owner=request.user)
-
-    return render(request, "core/client_detail.html", {"client": client})
+    total_hours = client.time_logs.aggregate(Sum('hours'))['hours__sum'] or 0
+    total_paid = client.payments.filter(status="paid").aggregate(Sum('amount'))['amount__sum'] or 0
+    total_outstanding = client.payments.exclude(status="paid").aggregate(Sum('amount'))['amount__sum'] or 0
+    return render(request, "core/client_detail.html", {
+        "client": client,
+        "total_hours": total_hours,
+        "total_paid": total_paid,
+        "total_outstanding": total_outstanding,
+    })
 
 @login_required
 def edit_client(request, client_id):
@@ -56,19 +64,6 @@ def delete_client(request, client_id):
         return redirect("client_list")
 
     return render(request, "core/delete_client.html", {"client": client})
-
-def signup(request):
-    if request.method == "POST":
-        form = UserSignUpForm(request.POST)
-
-        if form.is_valid():
-            form.save()
-            return redirect("login")
-
-    else:
-        form = UserSignUpForm()
-
-    return render(request, "core/signup.html", {"form": form})
 
 @login_required
 def add_appointment(request, client_id):
@@ -151,3 +146,52 @@ def schedule(request):
         "selected_month": selected_month,
         "selected_day": selected_day,
     })
+
+@login_required
+def log_payment(request, client_id):
+    client = get_object_or_404(Client, id=client_id, owner=request.user)
+    if request.method == "POST":
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            payment = form.save(commit=False)
+            payment.client = client
+            payment.save()
+            return redirect("client_detail", client_id=client.id)
+    else:
+        form = PaymentForm()
+    return render(request, "core/log_payment.html", {"form": form, "client": client})
+
+@login_required
+def edit_payment(request, payment_id):
+    payment = get_object_or_404(Payment, id=payment_id, client__owner=request.user)
+    if request.method == "POST":
+        form = PaymentForm(request.POST, instance=payment)
+        if form.is_valid():
+            form.save()
+            return redirect("client_detail", client_id=payment.client.id)
+    else:
+        form = PaymentForm(instance=payment)
+    return render(request, "core/edit_payment.html", {"form": form, "payment": payment})
+
+@login_required
+def delete_payment(request, payment_id):
+    payment = get_object_or_404(Payment, id=payment_id, client__owner=request.user)
+    client_id = payment.client.id
+    if request.method == "POST":
+        payment.delete()
+        return redirect("client_detail", client_id=client_id)
+    return render(request, "core/delete_payment.html", {"payment": payment})
+
+@login_required
+def log_time(request, client_id):
+    client = get_object_or_404(Client, id=client_id, owner=request.user)
+    if request.method == "POST":
+        form = TimeLogForm(request.POST)
+        if form.is_valid():
+            time_log = form.save(commit=False)
+            time_log.client = client
+            time_log.save()
+            return redirect("client_detail", client_id=client.id)
+    else:
+        form = TimeLogForm()
+    return render(request, "core/log_time.html", {"form": form, "client": client})

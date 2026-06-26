@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}
+
+{% block auth_content %}
+<div class="card" style="width: 100%; max-width: 420px; text-align: center;">
+    <h2 style="margin-bottom: 8px; color: var(--navy-base);">Check your email</h2>
+    <p style="color: var(--text-muted); margin-bottom: 24px;">
+        We sent you a verification link. Open the email and click the link to finish creating your account.
+    </p>
+
+    <a href="{% url 'account_login' %}" class="btn btn-primary btn-block">
+        Back to login
+    </a>
+</div>
+{% endblock %}
