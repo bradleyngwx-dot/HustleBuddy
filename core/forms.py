@@ -34,3 +34,19 @@ class AppointmentForm(forms.ModelForm):
     class Meta:
         model = Appointment
         fields = ["title", "date", "start_time", "end_time", "status", "notes"]
+
+from .models import TimeLog, Payment
+
+class TimeLogForm(forms.ModelForm):
+    class Meta:
+        model = TimeLog
+        fields = ['date', 'hours', 'description']
+
+class PaymentForm(forms.ModelForm):
+    class Meta:
+        model = Payment
+        fields = ['amount', 'date_issued', 'date_paid', 'status', 'description']
+        widgets = {
+            'date_issued': forms.DateInput(attrs={'type': 'date'}),
+            'date_paid': forms.DateInput(attrs={'type': 'date'}),
+        }

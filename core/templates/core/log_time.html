@@ -1,0 +1,37 @@
+{% extends "core/base.html" %}
+
+{% block title %}Log Hours - HustleBuddy{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Log Hours for {{ client.name }}</h1>
+    <a href="{% url 'client_detail' client.id %}" class="btn btn-secondary">Cancel</a>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <form method="post">
+        {% csrf_token %}
+        
+        {% include "core/_form_errors.html" %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" name="date" id="date" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="hours">Hours Spent</label>
+                <input type="number" name="hours" id="hours" class="form-control" step="0.25" min="0" placeholder="e.g., 2.5" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Task Description</label>
+            <input type="text" name="description" id="description" class="form-control" placeholder="e.g., Drafted initial logo concepts" maxlength="255" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Save Hours</button>
+    </form>
+</div>
+{% endblock %}

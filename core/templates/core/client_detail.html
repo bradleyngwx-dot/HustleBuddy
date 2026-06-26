@@ -71,16 +71,55 @@
         <p style="color: var(--text-muted);">No urgent reminders.</p>
     </div>
 
-    <!-- Hours Worked (Placeholder) -->
-    <div class="card">
-        <h3 style="margin-bottom: 16px;">Hours Worked</h3>
-        <p style="font-size: 2rem; font-weight: bold; color: var(--navy-base);">0 <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">hrs</span></p>
+    <div class="summary-card">
+        <h3>Total Hours Logged</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: var(--primary-blue);">
+            {{ total_hours|floatformat:1 }} <span style="font-size: 1rem; color: gray;">hrs</span>
+        </p>
+        
+        <a href="{% url 'log_time' client.id %}" class="btn btn-primary btn-sm">+ Log Hours</a>
     </div>
 
-    <!-- Payments (Placeholder) -->
-    <div class="card">
-        <h3 style="margin-bottom: 16px;">Total Billed</h3>
-        <p style="font-size: 2rem; font-weight: bold; color: var(--green-success);">$0.00</p>
+    <!-- Payments -->
+    <div class="card" style="border-left: 4px solid var(--green-success);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0;">Payments</h3>
+            <a href="{% url 'log_payment' client.id %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">+ Add</a>
+        </div>
+
+        <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Paid</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: var(--green-success);">${{ total_paid }}</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Outstanding</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: var(--yellow-warning);">${{ total_outstanding }}</div>
+            </div>
+        </div>
+
+        {% if client.payments.all %}
+            <ul style="list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; padding-right: 10px;">
+                {% for payment in client.payments.all %}
+                    <li style="padding: 12px 0; border-bottom: 1px solid var(--border-color); {% if forloop.last %}border-bottom: none; padding-bottom: 0;{% endif %}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${{ payment.amount }}</strong>
+                                {% if payment.description %}<span style="color: var(--text-muted); font-size: 0.9rem;"> — {{ payment.description }}</span>{% endif %}
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">Issued {{ payment.date_issued }}{% if payment.date_paid %} · Paid {{ payment.date_paid }}{% endif %}</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span class="badge">{{ payment.get_status_display }}</span>
+                                <a href="{% url 'edit_payment' payment.id %}" style="color: var(--blue-primary); text-decoration: none; font-size: 0.85rem;">✏️</a>
+                                <a href="{% url 'delete_payment' payment.id %}" style="color: var(--red-danger); text-decoration: none; font-size: 0.85rem;">🗑️</a>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color: var(--text-muted); margin: 0;">No payments recorded yet.</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

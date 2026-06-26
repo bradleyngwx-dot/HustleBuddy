@@ -14,4 +14,8 @@ urlpatterns = [
     path("clients/<int:client_id>/appointments/add/", views.add_appointment, name="add_appointment"),
     path("appointments/<int:appointment_id>/edit/", views.edit_appointment, name="edit_appointment"),
     path("appointments/<int:appointment_id>/delete/", views.delete_appointment, name="delete_appointment"),
+    path("client/<int:client_id>/log-time/", views.log_time, name="log_time"),
+    path("clients/<int:client_id>/log-payment/", views.log_payment, name="log_payment"),
+    path("payments/<int:payment_id>/edit/", views.edit_payment, name="edit_payment"),
+    path("payments/<int:payment_id>/delete/", views.delete_payment, name="delete_payment"),
 ]
