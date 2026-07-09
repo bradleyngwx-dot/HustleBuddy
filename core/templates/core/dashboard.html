@@ -5,67 +5,90 @@
     <h1 class="page-title">Dashboard</h1>
 </div>
 
-<div class="metric-grid">
-    <div class="card metric-card">
-        <h3>Hours This Month</h3>
-        <p class="metric-value metric-blue">
-            {{ total_hours_this_month|floatformat:1 }} hrs
-        </p>
-    </div>
+<div class="dashboard-overview">
+    <div class="metric-grid">
+        <div class="card metric-card">
+            <h3>Hours This Month</h3>
+            <p class="metric-value metric-blue">
+                {{ total_hours_this_month|floatformat:1 }} hrs
+            </p>
+        </div>
 
-    <div class="card metric-card">
-        <h3>Paid This Month</h3>
-        <p class="metric-value metric-green">
-            ${{ total_paid_this_month|floatformat:2 }}
-        </p>
-    </div>
+        <div class="card metric-card">
+            <h3>Paid This Month</h3>
+            <p class="metric-value metric-green">
+                ${{ total_paid_this_month|floatformat:2 }}
+            </p>
+        </div>
 
-    <div class="card metric-card">
-        <h3>Effective Hourly Rate</h3>
-        <p class="metric-value metric-navy">
-            ${{ effective_hourly_rate|floatformat:2 }}/hr
-        </p>
-    </div>
+        <div class="card metric-card">
+            <h3>Effective Hourly Rate</h3>
+            <p class="metric-value metric-navy">
+                ${{ effective_hourly_rate|floatformat:2 }}/hr
+            </p>
+        </div>
 
-    <div class="card metric-card">
-        <h3>Appointments</h3>
-        <div class="metric-pair">
-            <div>
-                <div class="metric-label">Today</div>
-                <div class="metric-value metric-navy">
-                    {{ appointments_today.count }}
+        <div class="card metric-card">
+            <h3>Completed Unpaid</h3>
+            <p class="metric-value metric-red">
+                ${{ completed_but_unpaid|floatformat:2 }}
+            </p>
+        </div>
+
+        <div class="card metric-card">
+            <h3>Upcoming Revenue</h3>
+            <p class="metric-value metric-green">
+                ${{ upcoming_revenue|floatformat:2 }}
+            </p>
+        </div>
+
+        <div class="card metric-card">
+            <h3>Avg Days To Payment</h3>
+            <p class="metric-value metric-blue">
+                {{ average_days_to_payment|floatformat:1 }} days
+            </p>
+        </div>
+
+        <div class="card metric-card metric-card-wide">
+            <h3>Appointments</h3>
+            <div class="metric-pair">
+                <div>
+                    <div class="metric-label">Today</div>
+                    <div class="metric-value metric-navy">
+                        {{ appointments_today.count }}
+                    </div>
+                </div>
+                <div>
+                    <div class="metric-label">This Week</div>
+                    <div class="metric-value metric-yellow">
+                        {{ upcoming_appointments.count }}
+                    </div>
                 </div>
             </div>
-            <div>
-                <div class="metric-label">This Week</div>
-                <div class="metric-value metric-yellow">
-                    {{ upcoming_appointments.count }}
-                </div>
+        </div>
+    </div>
+
+    <div class="chart-stack">
+        <div class="card chart-card">
+            <div class="chart-card-header">
+                <h3>Hours and Paid</h3>
+                <form method="get">
+                    <select name="hours_range" class="form-control chart-filter" onchange="this.form.submit()">
+                        <option value="3" {% if selected_hours_range == "3" %}selected{% endif %}>Past 3 months</option>
+                        <option value="12" {% if selected_hours_range == "12" %}selected{% endif %}>Past 12 months</option>
+                    </select>
+                </form>
+            </div>
+            <div class="chart-canvas">
+                <canvas id="hoursChart"></canvas>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="dashboard-grid">
-    <div class="card" style="height: 350px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px;">
-            <h3 style="margin: 0;">Hours and Paid</h3>
-            <form method="get">
-                <select name="hours_range" class="form-control" style="width: 150px; padding: 8px;" onchange="this.form.submit()">
-                    <option value="3" {% if selected_hours_range == "3" %}selected{% endif %}>Past 3 months</option>
-                    <option value="12" {% if selected_hours_range == "12" %}selected{% endif %}>Past 12 months</option>
-                </select>
-            </form>
-        </div>
-        <div style="height: 260px;">
-            <canvas id="hoursChart"></canvas>
-        </div>
-    </div>
-
-    <div class="card" style="height: 350px;">
-        <h3 style="margin-bottom: 16px;">Payment Breakdown</h3>
-        <div style="height: 260px;">
-            <canvas id="paymentPieChart"></canvas>
+        <div class="card chart-card">
+            <h3 style="margin-bottom: 16px;">Payment Breakdown</h3>
+            <div class="chart-canvas">
+                <canvas id="paymentPieChart"></canvas>
+            </div>
         </div>
     </div>
 </div>

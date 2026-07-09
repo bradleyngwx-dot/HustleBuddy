@@ -354,10 +354,40 @@ def dashboard(request):
         ],
     }
 
+    completed_but_unpaid = Payment.objects.filter(
+        client__owner=request.user,
+        appointment__status="completed",
+        status__in=["pending", "overdue"],
+    ).aggregate(total=Sum("amount", default=0))["total"] or Decimal("0")
+
+    upcoming_revenue = Appointment.objects.filter(
+        owner=request.user,
+        date__gte=today,
+        status__in=["upcoming", "rescheduled"],
+    ).aggregate(total=Sum("price", default=0))["total"] or Decimal("0")
+
+    paid_payments_with_dates = Payment.objects.filter(
+        client__owner=request.user,
+        status="paid",
+        date_paid__isnull=False,
+    )
+    payment_day_counts = [
+        (payment.date_paid - payment.date_issued).days
+        for payment in paid_payments_with_dates
+        if payment.date_paid >= payment.date_issued
+    ]
+    if payment_day_counts:
+        average_days_to_payment = sum(payment_day_counts) / len(payment_day_counts)
+    else:
+        average_days_to_payment = 0
+
     context = {
         "total_hours_this_month": total_hours_this_month,
         "total_paid_this_month": total_paid_this_month,
         "effective_hourly_rate": effective_hourly_rate,
+        "completed_but_unpaid": completed_but_unpaid,
+        "upcoming_revenue": upcoming_revenue,
+        "average_days_to_payment": average_days_to_payment,
         "appointments_today": appointments_today,
         "upcoming_appointments": upcoming_appointments,
         "chart_data": chart_data,
