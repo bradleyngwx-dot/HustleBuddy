@@ -3,7 +3,7 @@ from django.test import TestCase, Client as HttpClient
 from django.contrib.auth.models import User
 from django.urls import reverse
 
-from .models import Client, Payment
+from core.models import Client, Payment
 
 
 class PaymentModelTest(TestCase):

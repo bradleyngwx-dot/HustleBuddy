@@ -45,6 +45,7 @@
                         <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px;">
                             📅 {{ appointment.date }} at {{ appointment.start_time }}
                             {% if appointment.end_time %} to {{ appointment.end_time }}{% endif %}
+                            {% if appointment.price %} - ${{ appointment.price }}{% endif %}
                         </div>
 
                         {% if appointment.notes %}
@@ -76,15 +77,13 @@
         <p style="font-size: 2rem; font-weight: bold; color: var(--primary-blue);">
             {{ total_hours|floatformat:1 }} <span style="font-size: 1rem; color: gray;">hrs</span>
         </p>
-        
-        <a href="{% url 'log_time' client.id %}" class="btn btn-primary btn-sm">+ Log Hours</a>
     </div>
 
     <!-- Payments -->
     <div class="card" style="border-left: 4px solid var(--green-success);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h3 style="margin: 0;">Payments</h3>
-            <a href="{% url 'log_payment' client.id %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">+ Add</a>
+            <a href="{% url 'log_payment' client.id %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">+ Manual</a>
         </div>
 
         <div style="display: flex; gap: 24px; margin-bottom: 16px;">

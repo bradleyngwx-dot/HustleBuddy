@@ -29,6 +29,7 @@ class Appointment(models.Model):
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField(blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="upcoming")
     notes = models.TextField(blank=True)
 
@@ -40,6 +41,13 @@ class Payment(models.Model):
     ]
 
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="payments")
+    appointment = models.OneToOneField(
+        Appointment,
+        on_delete=models.CASCADE,
+        related_name="payment",
+        blank=True,
+        null=True,
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     date_issued = models.DateField()
     date_paid = models.DateField(blank=True, null=True)
@@ -52,6 +60,13 @@ class Payment(models.Model):
 
 class TimeLog(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="time_logs")
+    appointment = models.OneToOneField(
+        Appointment,
+        on_delete=models.CASCADE,
+        related_name="time_log",
+        blank=True,
+        null=True,
+    )
     date = models.DateField()
     hours = models.DecimalField(max_digits=5, decimal_places=2) 
     description = models.CharField(max_length=255, help_text="e.g., Drafted initial logo concepts")
