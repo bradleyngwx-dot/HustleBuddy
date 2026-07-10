@@ -17,4 +17,4 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . /app/
 
 # Command to run the development server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "hustlebuddy.wsgi:application", "--bind", "0.0.0.0:8000"]
