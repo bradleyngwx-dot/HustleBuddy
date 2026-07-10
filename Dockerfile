@@ -16,5 +16,5 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Copy the rest of the project files into the container
 COPY . /app/
 
-# Command to run the web server
-CMD ["sh", "-c", "gunicorn hustlebuddy.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
+# Apply database migrations, then run the web server
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn hustlebuddy.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
