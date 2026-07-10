@@ -1,17 +1,19 @@
 import os
 from pathlib import Path
-import django
 from dotenv import load_dotenv
-import allauth
 import dj_database_url
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env', override=True)
+load_dotenv(BASE_DIR / '.env', override=False)
 
 
-DEBUG = os.getenv("DEBUG", "True") == "True"
+def csv_env(name, default=""):
+    return [value.strip() for value in os.getenv(name, default).split(",") if value.strip()]
+
+
+DEBUG = os.getenv("DEBUG", "True").lower() in {"1", "true", "yes", "on"}
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
@@ -20,7 +22,17 @@ if not SECRET_KEY:
     else:
         raise RuntimeError("SECRET_KEY must be set in production")
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = csv_env("ALLOWED_HOSTS", "localhost,127.0.0.1")
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+CSRF_TRUSTED_ORIGINS = csv_env("CSRF_TRUSTED_ORIGINS")
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
+if RENDER_EXTERNAL_URL:
+    CSRF_TRUSTED_ORIGINS.append(RENDER_EXTERNAL_URL)
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 INSTALLED_APPS = [
@@ -107,16 +119,24 @@ ACCOUNT_EMAIL_SUBJECT_PREFIX = "[HustleBuddy] "
 
 # Database
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
+if os.getenv("DATABASE_URL"):
+    DATABASES = {
+        "default": dj_database_url.config(
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME'),
+            'USER': os.getenv('DB_USER'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST'),
+            'PORT': os.getenv('DB_PORT'),
+        }
+    }
 
 
 # Password validation
