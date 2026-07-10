@@ -3,6 +3,7 @@ from pathlib import Path
 import django
 from dotenv import load_dotenv
 import allauth
+import dj_database_url
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
