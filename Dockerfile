@@ -15,8 +15,6 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy the rest of the project files into the container
 COPY . /app/
-
-# Collect static files for WhiteNoise to serve in production
 RUN python manage.py collectstatic --noinput
 
 # Apply database migrations, then run the web server

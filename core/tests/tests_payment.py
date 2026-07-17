@@ -1,9 +1,12 @@
+from datetime import date, time
 from decimal import Decimal
+from unittest.mock import patch
+
 from django.test import TestCase, Client as HttpClient
 from django.contrib.auth.models import User
 from django.urls import reverse
 
-from core.models import Client, Payment
+from core.models import Appointment, Client, Payment
 
 
 class PaymentModelTest(TestCase):
@@ -170,3 +173,62 @@ class ClientDetailPaymentSummaryTest(TestCase):
         response = self.http.get(url)
         self.assertEqual(response.context["total_paid"], 0)
         self.assertEqual(response.context["total_outstanding"], 0)
+
+    @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
+    def test_client_detail_marks_appointment_payment_overdue_after_seven_days(self, mock_localdate):
+        appointment = Appointment.objects.create(
+            client=self.client_obj,
+            owner=self.user,
+            title="Strategy Session",
+            date=date(2026, 7, 8),
+            start_time=time(9, 0),
+            price=Decimal("200.00"),
+            status="completed",
+        )
+        payment = Payment.objects.create(
+            client=self.client_obj,
+            appointment=appointment,
+            amount=Decimal("200.00"),
+            date_issued=date(2026, 7, 8),
+            status="pending",
+        )
+
+        response = self.http.get(reverse("client_detail", args=[self.client_obj.id]))
+
+        self.assertEqual(response.status_code, 200)
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, "overdue")
+        self.assertContains(response, "Overdue")
+
+    @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
+    def test_client_detail_keeps_recent_paid_and_manual_payments_unchanged(self, mock_localdate):
+        old_appointment = Appointment.objects.create(
+            client=self.client_obj,
+            owner=self.user,
+            title="Paid Session",
+            date=date(2026, 7, 1),
+            start_time=time(9, 0),
+            price=Decimal("300.00"),
+            status="completed",
+        )
+        paid_payment = Payment.objects.create(
+            client=self.client_obj,
+            appointment=old_appointment,
+            amount=Decimal("300.00"),
+            date_issued=date(2026, 7, 1),
+            date_paid=date(2026, 7, 5),
+            status="paid",
+        )
+        manual_payment = Payment.objects.create(
+            client=self.client_obj,
+            amount=Decimal("150.00"),
+            date_issued=date(2026, 7, 1),
+            status="pending",
+        )
+
+        self.http.get(reverse("client_detail", args=[self.client_obj.id]))
+
+        paid_payment.refresh_from_db()
+        manual_payment.refresh_from_db()
+        self.assertEqual(paid_payment.status, "paid")
+        self.assertEqual(manual_payment.status, "pending")

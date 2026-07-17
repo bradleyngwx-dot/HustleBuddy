@@ -74,6 +74,16 @@ def sync_payment_for_appointment(appointment):
         payment.save(update_fields=["client", "amount", "date_issued", "description"])
 
 
+def mark_overdue_appointment_payments(user):
+    overdue_cutoff = timezone.localdate() - timedelta(days=7)
+    return Payment.objects.filter(
+        client__owner=user,
+        appointment__isnull=False,
+        appointment__date__lte=overdue_cutoff,
+        status="pending",
+    ).update(status="overdue", date_paid=None)
+
+
 @login_required
 def add_client(request):
     if request.method == "POST":
@@ -99,6 +109,7 @@ def client_list(request):
 @login_required
 def client_detail(request, client_id):
     client = get_object_or_404(Client, id=client_id, owner=request.user)
+    mark_overdue_appointment_payments(request.user)
     total_hours = client.time_logs.aggregate(Sum('hours'))['hours__sum'] or 0
     total_paid = client.payments.filter(status="paid").aggregate(Sum('amount'))['amount__sum'] or 0
     total_outstanding = client.payments.exclude(status="paid").aggregate(Sum('amount'))['amount__sum'] or 0
@@ -237,6 +248,7 @@ def log_payment(request, client_id):
 
 @login_required
 def edit_payment(request, payment_id):
+    mark_overdue_appointment_payments(request.user)
     payment = get_object_or_404(Payment, id=payment_id, client__owner=request.user)
     form_class = PaymentStatusForm if payment.appointment_id else PaymentForm
     if request.method == "POST":
@@ -260,6 +272,7 @@ def delete_payment(request, payment_id):
 @login_required
 def dashboard(request):
     today = timezone.localdate()
+    mark_overdue_appointment_payments(request.user)
     month_start = today.replace(day=1)
     next_month = (month_start + timedelta(days=32)).replace(day=1)
     selected_hours_range = request.GET.get("hours_range", "3")
