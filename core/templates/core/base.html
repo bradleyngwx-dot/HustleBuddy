@@ -1,4 +1,4 @@
-{% load static %}
+`{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,7 +13,11 @@
             <!-- Sidebar -->
             <aside class="sidebar">
                 <a href="{% url 'client_list' %}" class="sidebar-logo">
-                    <span class="sidebar-logo-mark">HB</span>
+                    <img
+                        src="{% static 'core/img/hustlebuddy-logo.png' %}"
+                        alt="HustleBuddy"
+                        class="sidebar-logo-image"
+                    >
                     <span class="sidebar-logo-text">Hustle<span>Buddy</span></span>
                 </a>
                 {% with active_url=request.resolver_match.url_name %}
