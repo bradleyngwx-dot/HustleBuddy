@@ -1,4 +1,3 @@
-/* --- Color Palette & Variables --- */
 :root {
     --navy-base: #0F172A;
     --navy-hover: #1E293B;
@@ -1051,3 +1050,10 @@ textarea.form-control {
 .badge-success { background: #D1FAE5; color: var(--green-success); }
 .badge-warning { background: #FEF3C7; color: var(--yellow-warning); }
 .badge-danger { background: #FEE2E2; color: var(--red-danger); }
+
+.sidebar-logo-image {
+    display: block;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
