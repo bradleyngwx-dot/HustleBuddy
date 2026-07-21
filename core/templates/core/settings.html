@@ -1,0 +1,21 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="dashboard-eyebrow">Settings</p>
+        <h1 class="page-title">Workspace Settings</h1>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card">
+        <h2>Profile</h2>
+        <p class="settings-copy">Signed in as {{ user.email|default:user.username }}.</p>
+    </div>
+    <div class="card">
+        <h2>Account</h2>
+        <p class="settings-copy">Use the profile menu in the sidebar to sign out.</p>
+    </div>
+</div>
+{% endblock %}

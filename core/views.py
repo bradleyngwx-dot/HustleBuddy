@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .forms import AppointmentForm, ClientForm, PaymentForm, PaymentStatusForm
 from .models import Appointment, Client, Payment, TimeLog
-from django.db.models import Q, Sum
+from django.db.models import Case, IntegerField, Q, Sum, Value, When
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 
@@ -74,6 +74,68 @@ def sync_payment_for_appointment(appointment):
         payment.save(update_fields=["client", "amount", "date_issued", "description"])
 
 
+def mark_overdue_appointment_payments(user):
+    overdue_cutoff = timezone.localdate() - timedelta(days=7)
+    return Payment.objects.filter(
+        client__owner=user,
+        appointment__isnull=False,
+        appointment__date__lte=overdue_cutoff,
+        status="pending",
+    ).update(status="overdue", date_paid=None)
+
+
+def paid_payments_between(user, start_date, end_date):
+    return Payment.objects.filter(client__owner=user, status="paid").filter(
+        Q(date_paid__gte=start_date, date_paid__lt=end_date)
+        | Q(
+            date_paid__isnull=True,
+            date_issued__gte=start_date,
+            date_issued__lt=end_date,
+        )
+    )
+
+
+def format_dashboard_date(value):
+    return f"{value.strftime('%b')} {value.day}, {value.year}"
+
+
+def period_change(current_value, previous_value, better_when_higher=True):
+    current_value = Decimal(str(current_value or 0))
+    previous_value = Decimal(str(previous_value or 0))
+
+    if current_value == previous_value:
+        return {"label": "No change", "tone_class": "change-neutral"}
+
+    if previous_value == 0:
+        tone_class = "change-positive" if better_when_higher else "change-negative"
+        return {"label": "New this period", "tone_class": tone_class}
+
+    change = ((current_value - previous_value) / previous_value) * Decimal("100")
+    tone_class = "change-positive" if current_value > previous_value else "change-negative"
+    if not better_when_higher:
+        tone_class = "change-negative" if current_value > previous_value else "change-positive"
+
+    sign = "+" if change > 0 else ""
+    return {
+        "label": f"{sign}{change.quantize(Decimal('1'))}% vs previous period",
+        "tone_class": tone_class,
+    }
+
+
+def save_appointment_for_client(form, client, user):
+    appointment = form.save(commit=False)
+    appointment.client = client
+    appointment.owner = user
+
+    if appointment.end_time == "":
+        appointment.end_time = None
+
+    appointment.save()
+    sync_time_log_for_appointment(appointment)
+    sync_payment_for_appointment(appointment)
+    return appointment
+
+
 @login_required
 def add_client(request):
     if request.method == "POST":
@@ -99,6 +161,7 @@ def client_list(request):
 @login_required
 def client_detail(request, client_id):
     client = get_object_or_404(Client, id=client_id, owner=request.user)
+    mark_overdue_appointment_payments(request.user)
     total_hours = client.time_logs.aggregate(Sum('hours'))['hours__sum'] or 0
     total_paid = client.payments.filter(status="paid").aggregate(Sum('amount'))['amount__sum'] or 0
     total_outstanding = client.payments.exclude(status="paid").aggregate(Sum('amount'))['amount__sum'] or 0
@@ -143,24 +206,39 @@ def add_appointment(request, client_id):
         form = AppointmentForm(request.POST)
 
         if form.is_valid():
-            appointment = form.save(commit=False)
-            appointment.client = client
-            appointment.owner = request.user
-            
-            # --- THE FIX: Convert empty string to None before saving ---
-            if appointment.end_time == "":
-                appointment.end_time = None
-            # -----------------------------------------------------------
-
-            appointment.save()
-            sync_time_log_for_appointment(appointment)
-            sync_payment_for_appointment(appointment)
+            save_appointment_for_client(form, client, request.user)
             return redirect("client_detail", client_id=client.id)
 
     else:
         form = AppointmentForm()
 
     return render(request, "core/add_appointment.html", {"form": form, "client": client})
+
+
+@login_required
+def add_appointment_global(request):
+    clients = Client.objects.filter(owner=request.user).order_by("name")
+    form = AppointmentForm(request.POST or None)
+    selected_client_id = request.POST.get("client") if request.method == "POST" else None
+
+    if request.method == "POST":
+        selected_client = clients.filter(id=selected_client_id).first()
+        if selected_client is None:
+            form.add_error(None, "Choose a client for this appointment.")
+        elif form.is_valid():
+            save_appointment_for_client(form, selected_client, request.user)
+            return redirect("dashboard")
+
+    return render(
+        request,
+        "core/add_appointment.html",
+        {
+            "form": form,
+            "client": None,
+            "clients": clients,
+            "selected_client_id": selected_client_id,
+        },
+    )
 
 @login_required
 def delete_appointment(request, appointment_id):
@@ -237,6 +315,7 @@ def log_payment(request, client_id):
 
 @login_required
 def edit_payment(request, payment_id):
+    mark_overdue_appointment_payments(request.user)
     payment = get_object_or_404(Payment, id=payment_id, client__owner=request.user)
     form_class = PaymentStatusForm if payment.appointment_id else PaymentForm
     if request.method == "POST":
@@ -257,44 +336,170 @@ def delete_payment(request, payment_id):
         return redirect("client_detail", client_id=client_id)
     return render(request, "core/delete_payment.html", {"payment": payment})
 
+
+@login_required
+def payment_list(request):
+    mark_overdue_appointment_payments(request.user)
+    payments = (
+        Payment.objects.filter(client__owner=request.user)
+        .select_related("client", "appointment")
+        .annotate(
+            status_rank=Case(
+                When(status="overdue", then=Value(0)),
+                When(status="pending", then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("status_rank", "date_issued", "client__name")
+    )
+    totals = payments.aggregate(
+        paid=Sum("amount", filter=Q(status="paid"), default=0),
+        outstanding=Sum("amount", filter=Q(status="pending"), default=0),
+        overdue=Sum("amount", filter=Q(status="overdue"), default=0),
+    )
+    return render(
+        request,
+        "core/payment_list.html",
+        {
+            "payments": payments,
+            "payment_totals": totals,
+        },
+    )
+
+
+@login_required
+def time_log_list(request):
+    time_logs = (
+        TimeLog.objects.filter(client__owner=request.user)
+        .select_related("client", "appointment")
+        .order_by("-date", "client__name")
+    )
+    total_hours = time_logs.aggregate(total=Sum("hours", default=0))["total"] or Decimal("0")
+    return render(
+        request,
+        "core/time_log_list.html",
+        {
+            "time_logs": time_logs,
+            "total_hours": total_hours,
+        },
+    )
+
+
+@login_required
+def settings(request):
+    return render(request, "core/settings.html")
+
+
 @login_required
 def dashboard(request):
     today = timezone.localdate()
+    mark_overdue_appointment_payments(request.user)
     month_start = today.replace(day=1)
     next_month = (month_start + timedelta(days=32)).replace(day=1)
-    selected_hours_range = request.GET.get("hours_range", "3")
-    if selected_hours_range not in {"3", "12"}:
-        selected_hours_range = "3"
-    hours_month_count = int(selected_hours_range)
+    selected_period = request.GET.get("period") or request.GET.get("hours_range", "3")
+    if selected_period not in {"1", "3", "12"}:
+        selected_period = "3"
+    selected_hours_range = selected_period
+    hours_month_count = int(selected_period)
 
     time_logs = TimeLog.objects.filter(
         client__owner=request.user
     )
-    hours = time_logs.filter(date__gte=month_start, date__lt=next_month).aggregate(total=Sum("hours", default=0))["total"]
-    paid = Payment.objects.filter(client__owner=request.user, status="paid").filter(
-        Q(date_paid__gte=month_start, date_paid__lt=next_month)
-        | Q(date_paid__isnull=True, date_issued__gte=month_start, date_issued__lt=next_month)
-    )
-    total_hours_this_month = hours or Decimal("0")
-    total_paid_this_month = paid.aggregate(total=Sum("amount", default=0))["total"] or Decimal("0")
+    total_hours_this_month = time_logs.filter(
+        date__gte=month_start,
+        date__lt=next_month,
+    ).aggregate(total=Sum("hours", default=0))["total"] or Decimal("0")
+    total_paid_this_month = paid_payments_between(
+        request.user,
+        month_start,
+        next_month,
+    ).aggregate(total=Sum("amount", default=0))["total"] or Decimal("0")
     if total_hours_this_month > 0:
         effective_hourly_rate = total_paid_this_month / total_hours_this_month
     else:
         effective_hourly_rate = Decimal("0")
     appointments_today = Appointment.objects.filter(owner=request.user, date=today)
-    upcoming_appointments = (Appointment.objects.filter(owner=request.user,date__gte=today,date__lte=today + timedelta(days=7),)
-        .filter(status="upcoming").order_by("date", "start_time"))
+    upcoming_appointments = (
+        Appointment.objects.filter(
+            owner=request.user,
+            date__gte=today,
+            date__lte=today + timedelta(days=7),
+            status__in=["upcoming", "rescheduled"],
+        )
+        .select_related("client")
+        .order_by("date", "start_time")
+    )
 
     chart_months = [
         shift_month(month_start, offset)
         for offset in range(-(hours_month_count - 1), 1)
     ]
+    period_start = chart_months[0]
+    period_end = next_month
+    previous_period_start = shift_month(period_start, -hours_month_count)
+    previous_period_end = period_start
+    period_last_day = period_end - timedelta(days=1)
+
+    period_hours = time_logs.filter(
+        date__gte=period_start,
+        date__lt=period_end,
+    ).aggregate(total=Sum("hours", default=0))["total"] or Decimal("0")
+    previous_period_hours = time_logs.filter(
+        date__gte=previous_period_start,
+        date__lt=previous_period_end,
+    ).aggregate(total=Sum("hours", default=0))["total"] or Decimal("0")
+
+    period_revenue = paid_payments_between(
+        request.user,
+        period_start,
+        period_end,
+    ).aggregate(total=Sum("amount", default=0))["total"] or Decimal("0")
+    previous_period_revenue = paid_payments_between(
+        request.user,
+        previous_period_start,
+        previous_period_end,
+    ).aggregate(total=Sum("amount", default=0))["total"] or Decimal("0")
+
+    period_unpaid_payments = Payment.objects.filter(
+        client__owner=request.user,
+        status__in=["pending", "overdue"],
+        date_issued__gte=period_start,
+        date_issued__lt=period_end,
+    )
+    previous_period_unpaid_payments = Payment.objects.filter(
+        client__owner=request.user,
+        status__in=["pending", "overdue"],
+        date_issued__gte=previous_period_start,
+        date_issued__lt=previous_period_end,
+    )
+    period_outstanding = period_unpaid_payments.aggregate(
+        total=Sum("amount", default=0)
+    )["total"] or Decimal("0")
+    previous_period_outstanding = previous_period_unpaid_payments.aggregate(
+        total=Sum("amount", default=0)
+    )["total"] or Decimal("0")
+    unpaid_payment_count = period_unpaid_payments.count()
+
+    period_appointments = Appointment.objects.filter(
+        owner=request.user,
+        date__gte=period_start,
+        date__lt=period_end,
+    )
+    previous_period_appointments = Appointment.objects.filter(
+        owner=request.user,
+        date__gte=previous_period_start,
+        date__lt=previous_period_end,
+    )
+    period_appointment_count = period_appointments.count()
+    previous_period_appointment_count = previous_period_appointments.count()
+
     chart_month_keys = [month.strftime("%Y-%m") for month in chart_months]
     monthly_hours = {key: Decimal("0") for key in chart_month_keys}
     monthly_paid = {key: Decimal("0") for key in chart_month_keys}
 
     for row in (
-        time_logs.filter(date__gte=chart_months[0], date__lt=next_month)
+        time_logs.filter(date__gte=period_start, date__lt=period_end)
         .annotate(month=TruncMonth("date"))
         .values("month")
         .annotate(total=Sum("hours"))
@@ -307,8 +512,8 @@ def dashboard(request):
         Payment.objects.filter(
             client__owner=request.user,
             status="paid",
-            date_paid__gte=chart_months[0],
-            date_paid__lt=next_month,
+            date_paid__gte=period_start,
+            date_paid__lt=period_end,
         )
         .annotate(month=TruncMonth("date_paid"))
         .values("month")
@@ -323,8 +528,8 @@ def dashboard(request):
             client__owner=request.user,
             status="paid",
             date_paid__isnull=True,
-            date_issued__gte=chart_months[0],
-            date_issued__lt=next_month,
+            date_issued__gte=period_start,
+            date_issued__lt=period_end,
         )
         .annotate(month=TruncMonth("date_issued"))
         .values("month")
@@ -345,6 +550,11 @@ def dashboard(request):
         outstanding=Sum("amount", filter=Q(status="pending"), default=0),
         overdue=Sum("amount", filter=Q(status="overdue"), default=0),
     )
+    payment_chart_total = (
+        (payment_totals["paid"] or Decimal("0"))
+        + (payment_totals["outstanding"] or Decimal("0"))
+        + (payment_totals["overdue"] or Decimal("0"))
+    )
     payment_pie_data = {
         "labels": ["Paid", "Outstanding", "Overdue"],
         "values": [
@@ -353,6 +563,30 @@ def dashboard(request):
             float(payment_totals["overdue"] or 0),
         ],
     }
+    outstanding_payments = (
+        Payment.objects.filter(
+            client__owner=request.user,
+            status__in=["pending", "overdue"],
+        )
+        .select_related("client", "appointment")
+        .annotate(
+            status_rank=Case(
+                When(status="overdue", then=Value(0)),
+                When(status="pending", then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("status_rank", "date_issued", "client__name")[:8]
+    )
+    overdue_payment_count = Payment.objects.filter(
+        client__owner=request.user,
+        status="overdue",
+    ).count()
+    pending_payment_count = Payment.objects.filter(
+        client__owner=request.user,
+        status="pending",
+    ).count()
 
     completed_but_unpaid = Payment.objects.filter(
         client__owner=request.user,
@@ -381,10 +615,46 @@ def dashboard(request):
     else:
         average_days_to_payment = 0
 
+    selected_period_label = {
+        "1": "This month",
+        "3": "Past 3 months",
+        "12": "Past 12 months",
+    }[selected_period]
+    previous_period_label = (
+        "previous month"
+        if hours_month_count == 1
+        else f"previous {hours_month_count} months"
+    )
+    dashboard_user_name = request.user.get_short_name() or request.user.username
+
     context = {
+        "dashboard_user_name": dashboard_user_name,
         "total_hours_this_month": total_hours_this_month,
         "total_paid_this_month": total_paid_this_month,
         "effective_hourly_rate": effective_hourly_rate,
+        "period_revenue": period_revenue,
+        "period_outstanding": period_outstanding,
+        "period_hours": period_hours,
+        "period_appointment_count": period_appointment_count,
+        "unpaid_payment_count": unpaid_payment_count,
+        "selected_period": selected_period,
+        "selected_period_label": selected_period_label,
+        "selected_period_date_range": (
+            f"{format_dashboard_date(period_start)} - "
+            f"{format_dashboard_date(period_last_day)}"
+        ),
+        "previous_period_label": previous_period_label,
+        "revenue_change": period_change(period_revenue, previous_period_revenue),
+        "outstanding_change": period_change(
+            period_outstanding,
+            previous_period_outstanding,
+            better_when_higher=False,
+        ),
+        "hours_change": period_change(period_hours, previous_period_hours),
+        "appointments_change": period_change(
+            period_appointment_count,
+            previous_period_appointment_count,
+        ),
         "completed_but_unpaid": completed_but_unpaid,
         "upcoming_revenue": upcoming_revenue,
         "average_days_to_payment": average_days_to_payment,
@@ -393,6 +663,11 @@ def dashboard(request):
         "chart_data": chart_data,
         "selected_hours_range": selected_hours_range,
         "payment_pie_data": payment_pie_data,
+        "payment_chart_total": payment_chart_total,
+        "payment_totals": payment_totals,
+        "outstanding_payments": outstanding_payments,
+        "overdue_payment_count": overdue_payment_count,
+        "pending_payment_count": pending_payment_count,
     }
 
     return render(request, "core/dashboard.html", context)

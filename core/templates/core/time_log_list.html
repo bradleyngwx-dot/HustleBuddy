@@ -1,0 +1,58 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="dashboard-eyebrow">Time Logs</p>
+        <h1 class="page-title">Logged Work</h1>
+    </div>
+    <a href="{% url 'client_list' %}" class="btn btn-primary">Log Time</a>
+</div>
+
+<div class="card page-summary-card">
+    <div>
+        <span class="metric-label">Total Logged Hours</span>
+        <p class="metric-value">{{ total_hours|floatformat:1 }} hrs</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <div>
+            <h2>Recent Time Logs</h2>
+            <p>Completed appointment time and manually recorded work.</p>
+        </div>
+    </div>
+
+    {% if time_logs %}
+        <div class="responsive-table">
+            <table class="payment-table">
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th class="amount-cell">Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for time_log in time_logs %}
+                        <tr>
+                            <td><strong>{{ time_log.client.name }}</strong></td>
+                            <td>{{ time_log.date|date:"M j, Y" }}</td>
+                            <td>{{ time_log.description }}</td>
+                            <td class="amount-cell">{{ time_log.hours|floatformat:1 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3>No time logged yet</h3>
+            <p>Completed appointments and logged work will appear here.</p>
+            <a href="{% url 'schedule' %}" class="btn btn-secondary">Open Calendar</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
