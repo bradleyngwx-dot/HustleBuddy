@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
@@ -119,7 +120,17 @@ ACCOUNT_EMAIL_SUBJECT_PREFIX = "[HustleBuddy] "
 
 # Database
 
-if os.getenv("DATABASE_URL"):
+USE_SQLITE = os.getenv("USE_SQLITE", "False").lower() in {"1", "true", "yes", "on"}
+RUNNING_TESTS = "test" in sys.argv
+
+if USE_SQLITE or RUNNING_TESTS:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / os.getenv("SQLITE_DB_NAME", "db.sqlite3"),
+        }
+    }
+elif os.getenv("DATABASE_URL"):
     DATABASES = {
         "default": dj_database_url.config(
             conn_max_age=600,

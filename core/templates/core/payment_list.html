@@ -1,0 +1,83 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="dashboard-eyebrow">Payments</p>
+        <h1 class="page-title">Payment Activity</h1>
+    </div>
+    <a href="{% url 'client_list' %}" class="btn btn-primary">Add Payment</a>
+</div>
+
+<div class="dashboard-metrics payment-summary-row">
+    <div class="card metric-card metric-card-revenue">
+        <div class="metric-card-header">
+            <span class="metric-label">Paid</span>
+        </div>
+        <p class="metric-value">${{ payment_totals.paid|floatformat:2 }}</p>
+    </div>
+    <div class="card metric-card metric-card-outstanding">
+        <div class="metric-card-header">
+            <span class="metric-label">Pending</span>
+        </div>
+        <p class="metric-value">${{ payment_totals.outstanding|floatformat:2 }}</p>
+    </div>
+    <div class="card metric-card metric-card-appointments">
+        <div class="metric-card-header">
+            <span class="metric-label">Overdue</span>
+        </div>
+        <p class="metric-value">${{ payment_totals.overdue|floatformat:2 }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <div>
+            <h2>All Payments</h2>
+            <p>Review paid, pending, and overdue invoices.</p>
+        </div>
+    </div>
+
+    {% if payments %}
+        <div class="responsive-table">
+            <table class="payment-table">
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Issued</th>
+                        <th>Paid</th>
+                        <th>Status</th>
+                        <th class="amount-cell">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                        <tr class="clickable-row" data-href="{% url 'edit_payment' payment.id %}" tabindex="0">
+                            <td>
+                                <strong>{{ payment.client.name }}</strong>
+                                {% if payment.description %}
+                                    <span>{{ payment.description }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ payment.date_issued|date:"M j, Y" }}</td>
+                            <td>{% if payment.date_paid %}{{ payment.date_paid|date:"M j, Y" }}{% else %}-{% endif %}</td>
+                            <td>
+                                <span class="badge {% if payment.status == 'paid' %}badge-success{% elif payment.status == 'overdue' %}badge-danger{% else %}badge-warning{% endif %}">
+                                    {{ payment.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="amount-cell">${{ payment.amount|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3>No payments yet</h3>
+            <p>Payments will appear here once you log one for a client.</p>
+            <a href="{% url 'client_list' %}" class="btn btn-secondary">Open Clients</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

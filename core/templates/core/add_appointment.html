@@ -4,61 +4,89 @@
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">Add Appointment for {{ client.name }}</h1>
-    <a href="{% url 'client_detail' client.id %}" class="btn btn-secondary">Cancel</a>
+    <h1 class="page-title">
+        {% if client %}
+            Add Appointment for {{ client.name }}
+        {% else %}
+            Add Appointment
+        {% endif %}
+    </h1>
+    {% if client %}
+        <a href="{% url 'client_detail' client.id %}" class="btn btn-secondary">Cancel</a>
+    {% else %}
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+    {% endif %}
 </div>
 
 <div class="card" style="max-width: 600px;">
-    <form method="post">
-        {% csrf_token %}
-        
-        {% include "core/_form_errors.html" %}
+    {% if client or clients %}
+        <form method="post">
+            {% csrf_token %}
 
-        <div class="form-group">
-            <label for="title">Appointment Title</label>
-            <input type="text" name="title" id="title" class="form-control" placeholder="e.g., Initial Consultation" required>
-        </div>
+            {% include "core/_form_errors.html" %}
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-                <label for="date">Date</label>
-                <input type="date" name="date" id="date" class="form-control" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="status">Status</label>
-                <select name="status" id="status" class="form-control" required>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="rescheduled">Rescheduled</option>
-                </select>
-            </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-                <label for="start_time">Start Time</label>
-                <input type="time" name="start_time" id="start_time" class="form-control" required>
-            </div>
+            {% if not client %}
+                <div class="form-group">
+                    <label for="client">Client</label>
+                    <select name="client" id="client" class="form-control" required>
+                        {% for client_option in clients %}
+                            <option value="{{ client_option.id }}" {% if selected_client_id == client_option.id|stringformat:"s" %}selected{% endif %}>
+                                {{ client_option.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
 
             <div class="form-group">
-                <label for="end_time">End Time (Optional)</label>
-                <input type="time" name="end_time" id="end_time" class="form-control">
+                <label for="title">Appointment Title</label>
+                <input type="text" name="title" id="title" class="form-control" placeholder="e.g., Initial Consultation" required>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="price">Total Price ($)</label>
-            <input type="number" name="price" id="price" class="form-control" step="0.01" min="0" value="0.00" required>
-        </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" name="date" id="date" class="form-control" required>
+                </div>
 
-        <div class="form-group">
-            <label for="notes">Notes (Optional)</label>
-            <textarea name="notes" id="notes" class="form-control" placeholder="Prep notes, meeting links, etc."></textarea>
-        </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select name="status" id="status" class="form-control" required>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="rescheduled">Rescheduled</option>
+                    </select>
+                </div>
+            </div>
 
-        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Save Appointment</button>
-    </form>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label for="start_time">Start Time</label>
+                    <input type="time" name="start_time" id="start_time" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="end_time">End Time (Optional)</label>
+                    <input type="time" name="end_time" id="end_time" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="price">Total Price ($)</label>
+                <input type="number" name="price" id="price" class="form-control" step="0.01" min="0" value="0.00" required>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes (Optional)</label>
+                <textarea name="notes" id="notes" class="form-control" placeholder="Prep notes, meeting links, etc."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Save Appointment</button>
+        </form>
+    {% else %}
+        <p style="color: var(--text-muted); margin-bottom: 18px;">Add a client before scheduling your first appointment.</p>
+        <a href="{% url 'add_client' %}" class="btn btn-primary">Add Client</a>
+    {% endif %}
 </div>
 {% endblock %}

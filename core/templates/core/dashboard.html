@@ -1,96 +1,235 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
-</div>
-
-<div class="dashboard-overview">
-    <div class="metric-grid">
-        <div class="card metric-card">
-            <h3>Hours This Month</h3>
-            <p class="metric-value metric-blue">
-                {{ total_hours_this_month|floatformat:1 }} hrs
+<div class="dashboard-page">
+    <header class="dashboard-header">
+        <div class="dashboard-heading">
+            <p class="dashboard-eyebrow">{{ selected_period_label }} dashboard</p>
+            <h1 class="dashboard-title">Welcome back, {{ dashboard_user_name }}</h1>
+            <p class="dashboard-summary">
+                {{ selected_period_date_range }}: ${{ period_revenue|floatformat:2 }} collected,
+                {{ period_hours|floatformat:1 }} hours worked, and
+                {{ unpaid_payment_count }} unpaid payment{{ unpaid_payment_count|pluralize }} to follow up.
             </p>
         </div>
 
-        <div class="card metric-card">
-            <h3>Paid This Month</h3>
-            <p class="metric-value metric-green">
-                ${{ total_paid_this_month|floatformat:2 }}
-            </p>
-        </div>
+        <div class="dashboard-toolbar">
+            <form method="get" class="dashboard-period-form">
+                <label for="period">Period</label>
+                <select name="period" id="period" class="form-control dashboard-period-select" onchange="this.form.submit()">
+                    <option value="1" {% if selected_period == "1" %}selected{% endif %}>This month</option>
+                    <option value="3" {% if selected_period == "3" %}selected{% endif %}>Past 3 months</option>
+                    <option value="12" {% if selected_period == "12" %}selected{% endif %}>Past 12 months</option>
+                </select>
+            </form>
 
-        <div class="card metric-card">
-            <h3>Effective Hourly Rate</h3>
-            <p class="metric-value metric-navy">
-                ${{ effective_hourly_rate|floatformat:2 }}/hr
-            </p>
-        </div>
-
-        <div class="card metric-card">
-            <h3>Completed Unpaid</h3>
-            <p class="metric-value metric-red">
-                ${{ completed_but_unpaid|floatformat:2 }}
-            </p>
-        </div>
-
-        <div class="card metric-card">
-            <h3>Upcoming Revenue</h3>
-            <p class="metric-value metric-green">
-                ${{ upcoming_revenue|floatformat:2 }}
-            </p>
-        </div>
-
-        <div class="card metric-card">
-            <h3>Avg Days To Payment</h3>
-            <p class="metric-value metric-blue">
-                {{ average_days_to_payment|floatformat:1 }} days
-            </p>
-        </div>
-
-        <div class="card metric-card metric-card-wide">
-            <h3>Appointments</h3>
-            <div class="metric-pair">
-                <div>
-                    <div class="metric-label">Today</div>
-                    <div class="metric-value metric-navy">
-                        {{ appointments_today.count }}
-                    </div>
-                </div>
-                <div>
-                    <div class="metric-label">This Week</div>
-                    <div class="metric-value metric-yellow">
-                        {{ upcoming_appointments.count }}
-                    </div>
-                </div>
+            <div class="dashboard-action-group">
+                <a href="{% url 'add_appointment_global' %}" class="btn btn-secondary dashboard-action">
+                    <span class="btn-symbol">+</span>
+                    Add Appointment
+                </a>
+                <a href="{% url 'add_client' %}" class="btn btn-primary dashboard-action">
+                    <span class="btn-symbol">+</span>
+                    Add Client
+                </a>
             </div>
         </div>
-    </div>
+    </header>
 
-    <div class="chart-stack">
-        <div class="card chart-card">
+    <section class="dashboard-metrics" aria-label="Dashboard metrics">
+        <a href="{% url 'payment_list' %}" class="card metric-card metric-card-revenue clickable-card">
+            <div class="metric-card-header">
+                <span class="metric-label">Revenue</span>
+                <span class="metric-period">{{ selected_period_label }}</span>
+            </div>
+            <p class="metric-value">${{ period_revenue|floatformat:2 }}</p>
+            <p class="metric-meta">
+                <span class="metric-change {{ revenue_change.tone_class }}">{{ revenue_change.label }}</span>
+            </p>
+        </a>
+
+        <a href="#payments" class="card metric-card metric-card-outstanding clickable-card">
+            <div class="metric-card-header">
+                <span class="metric-label">Outstanding Payments</span>
+                <span class="metric-period">{{ selected_period_label }}</span>
+            </div>
+            <p class="metric-value">${{ period_outstanding|floatformat:2 }}</p>
+            <p class="metric-meta">
+                {{ unpaid_payment_count }} unpaid payment{{ unpaid_payment_count|pluralize }}
+                <span class="metric-change {{ outstanding_change.tone_class }}">{{ outstanding_change.label }}</span>
+            </p>
+        </a>
+
+        <a href="{% url 'time_log_list' %}" class="card metric-card metric-card-hours clickable-card">
+            <div class="metric-card-header">
+                <span class="metric-label">Hours Worked</span>
+                <span class="metric-period">{{ selected_period_label }}</span>
+            </div>
+            <p class="metric-value">{{ period_hours|floatformat:1 }} hrs</p>
+            <p class="metric-meta">
+                <span class="metric-change {{ hours_change.tone_class }}">{{ hours_change.label }}</span>
+            </p>
+        </a>
+
+        <a href="{% url 'schedule' %}" class="card metric-card metric-card-appointments clickable-card">
+            <div class="metric-card-header">
+                <span class="metric-label">Appointments</span>
+                <span class="metric-period">{{ selected_period_label }}</span>
+            </div>
+            <p class="metric-value">{{ period_appointment_count }}</p>
+            <p class="metric-meta">
+                {{ appointments_today.count }} today
+                <span class="metric-change {{ appointments_change.tone_class }}">{{ appointments_change.label }}</span>
+            </p>
+        </a>
+    </section>
+
+    <section class="dashboard-main-grid">
+        <div class="card trend-card">
             <div class="chart-card-header">
-                <h3>Hours and Paid</h3>
-                <form method="get">
-                    <select name="hours_range" class="form-control chart-filter" onchange="this.form.submit()">
-                        <option value="3" {% if selected_hours_range == "3" %}selected{% endif %}>Past 3 months</option>
-                        <option value="12" {% if selected_hours_range == "12" %}selected{% endif %}>Past 12 months</option>
-                    </select>
-                </form>
+                <div>
+                    <h2>Hours &amp; Revenue</h2>
+                    <p>{{ selected_period_date_range }} compared with the {{ previous_period_label }}</p>
+                </div>
             </div>
-            <div class="chart-canvas">
+            <div class="chart-canvas chart-canvas-large">
                 <canvas id="hoursChart"></canvas>
             </div>
         </div>
 
-        <div class="card chart-card">
-            <h3 style="margin-bottom: 16px;">Payment Breakdown</h3>
-            <div class="chart-canvas">
-                <canvas id="paymentPieChart"></canvas>
+        <section class="card appointments-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Upcoming Appointments</h2>
+                    <p>Next 7 days</p>
+                </div>
+                <a href="{% url 'schedule' %}" class="panel-link">View schedule</a>
+            </div>
+
+            {% if upcoming_appointments %}
+                <ul class="appointment-list">
+                    {% for appointment in upcoming_appointments %}
+                        <li>
+                            <a href="{% url 'edit_appointment' appointment.id %}" class="appointment-item">
+                                <div class="appointment-date">
+                                    <span>{{ appointment.date|date:"M" }}</span>
+                                    <strong>{{ appointment.date|date:"j" }}</strong>
+                                </div>
+                                <div class="appointment-details">
+                                    <h3>{{ appointment.title }}</h3>
+                                    <p>
+                                        {{ appointment.client.name }} - {{ appointment.start_time|time:"g:i A" }}
+                                        {% if appointment.end_time %} to {{ appointment.end_time|time:"g:i A" }}{% endif %}
+                                    </p>
+                                    <div class="appointment-meta">
+                                        <span class="badge">{{ appointment.get_status_display }}</span>
+                                        {% if appointment.price %}
+                                            <span>${{ appointment.price|floatformat:2 }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="row-action">Edit</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="empty-state">
+                    <h3>No appointments coming up</h3>
+                    <p>Your next 7 days are clear.</p>
+                    <a href="{% url 'add_appointment_global' %}" class="btn btn-secondary">Add Appointment</a>
+                </div>
+            {% endif %}
+        </section>
+    </section>
+
+    <section id="payments" class="card payment-section">
+        <div class="section-header">
+            <div>
+                <h2>Payments</h2>
+                <p>
+                    {{ pending_payment_count }} pending and {{ overdue_payment_count }} overdue payment{{ overdue_payment_count|pluralize }}.
+                    Average {{ average_days_to_payment|floatformat:1 }} days to payment.
+                </p>
+            </div>
+            <a href="{% url 'payment_list' %}" class="panel-link">View all payments</a>
+        </div>
+
+        <div class="payment-section-grid">
+            <div class="payment-chart-panel">
+                <div class="payment-chart-wrap">
+                    <canvas id="paymentPieChart"></canvas>
+                    <div class="payment-chart-total" aria-hidden="true">
+                        <span>Total</span>
+                        <strong>${{ payment_chart_total|floatformat:2 }}</strong>
+                    </div>
+                </div>
+                <dl class="payment-stat-list">
+                    <div>
+                        <dt>Paid</dt>
+                        <dd class="stat-paid">${{ payment_totals.paid|floatformat:2 }}</dd>
+                    </div>
+                    <div>
+                        <dt>Outstanding</dt>
+                        <dd class="stat-pending">${{ payment_totals.outstanding|floatformat:2 }}</dd>
+                    </div>
+                    <div>
+                        <dt>Overdue</dt>
+                        <dd class="stat-overdue">${{ payment_totals.overdue|floatformat:2 }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="payment-table-panel">
+                <div class="table-header">
+                    <h3>Outstanding &amp; Overdue</h3>
+                    <span>{{ outstanding_payments|length }} shown</span>
+                </div>
+
+                {% if outstanding_payments %}
+                    <div class="responsive-table">
+                        <table class="payment-table">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Issued</th>
+                                    <th>Status</th>
+                                    <th class="amount-cell">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in outstanding_payments %}
+                                    <tr class="clickable-row" data-href="{% url 'edit_payment' payment.id %}" tabindex="0">
+                                        <td>
+                                            <strong>{{ payment.client.name }}</strong>
+                                            {% if payment.description %}
+                                                <span>{{ payment.description }}</span>
+                                            {% elif payment.appointment %}
+                                                <span>{{ payment.appointment.title }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ payment.date_issued|date:"M j, Y" }}</td>
+                                        <td>
+                                            <span class="badge {% if payment.status == 'overdue' %}badge-danger{% else %}badge-warning{% endif %}">
+                                                {{ payment.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td class="amount-cell">${{ payment.amount|floatformat:2 }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <h3>All payments are current</h3>
+                        <p>No outstanding or overdue payments need follow-up right now.</p>
+                        <a href="{% url 'client_list' %}" class="btn btn-secondary">Review Clients</a>
+                    </div>
+                {% endif %}
             </div>
         </div>
-    </div>
+    </section>
 </div>
 
 {{ chart_data|json_script:"dashboard-chart-data" }}
@@ -110,15 +249,23 @@
                 {
                     label: "Hours Worked",
                     data: dashboardData.hours,
-                    backgroundColor: "#2563EB",
-                    borderRadius: 6,
+                    backgroundColor: "rgba(37, 99, 235, 0.82)",
+                    borderColor: "#2563EB",
+                    borderWidth: 1,
+                    borderRadius: 8,
                     yAxisID: "hours"
                 },
                 {
-                    label: "Amount Paid",
+                    label: "Revenue Collected",
+                    type: "line",
                     data: dashboardData.paid,
-                    backgroundColor: "#10B981",
-                    borderRadius: 6,
+                    backgroundColor: "rgba(16, 185, 129, 0.14)",
+                    borderColor: "#10B981",
+                    borderWidth: 3,
+                    tension: 0.36,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
                     yAxisID: "paid"
                 }
             ]
@@ -126,18 +273,67 @@
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: "index",
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 8,
+                        color: "#475569",
+                        padding: 18,
+                        font: {
+                            size: 12,
+                            weight: "600"
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "#0F172A",
+                    padding: 12,
+                    titleFont: {
+                        weight: "700"
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y || 0;
+                            if (context.dataset.yAxisID === "paid") {
+                                return context.dataset.label + ": $" + value.toLocaleString();
+                            }
+                            return context.dataset.label + ": " + value + "h";
+                        }
+                    }
+                }
+            },
             scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: "#64748B",
+                        maxRotation: 0
+                    }
+                },
                 hours: {
                     beginAtZero: true,
                     position: "left",
+                    grid: {
+                        color: "rgba(148, 163, 184, 0.22)"
+                    },
                     ticks: {
+                        color: "#64748B",
                         callback: function(value) {
                             return value + "h";
                         }
                     },
                     title: {
                         display: true,
-                        text: "Hours"
+                        text: "Hours",
+                        color: "#475569"
                     }
                 },
                 paid: {
@@ -147,13 +343,15 @@
                         drawOnChartArea: false
                     },
                     ticks: {
+                        color: "#64748B",
                         callback: function(value) {
                             return "$" + value;
                         }
                     },
                     title: {
                         display: true,
-                        text: "Paid ($)"
+                        text: "Revenue",
+                        color: "#475569"
                     }
                 }
             }
@@ -171,13 +369,42 @@
             datasets: [
                 {
                     data: paymentPieData.values,
-                    backgroundColor: ["#10B981", "#F59E0B", "#EF4444"]
+                    backgroundColor: ["#10B981", "#F59E0B", "#EF4444"],
+                    borderColor: "#FFFFFF",
+                    borderWidth: 4,
+                    hoverOffset: 5
                 }
             ]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            cutout: "72%",
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 8,
+                        color: "#475569",
+                        padding: 14,
+                        font: {
+                            size: 12,
+                            weight: "600"
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "#0F172A",
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed || 0;
+                            return context.label + ": $" + value.toLocaleString();
+                        }
+                    }
+                }
+            }
         }
     });
 </script>
