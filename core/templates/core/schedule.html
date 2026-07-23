@@ -1,60 +1,114 @@
-{% extends "core/base.html" %}
+{% extends 'core/base.html' %}
 
 {% block title %}Schedule - HustleBuddy{% endblock %}
 
 {% block content %}
-    <h1>Schedule</h1>
+<div class="page-header">
+    <div>
+        <p class="dashboard-eyebrow">Schedule</p>
+        <h1 class="page-title">Appointments</h1>
+    </div>
+    <a href="{% url 'add_appointment_global' %}" class="btn btn-primary">+ Add Appointment</a>
+</div>
 
-    <form method="get">
-        <label for="year">Year</label>
-        <input type="number" id="year" name="year" min="2000" max="2100" value="{{ selected_year }}">
+<div class="card">
+    <div class="section-header">
+        <div>
+            <h2>Filter</h2>
+            <p>Narrow appointments down to a year, month, or day.</p>
+        </div>
+    </div>
 
-        <label for="month">Month</label>
-        <select id="month" name="month">
-            <option value="">Any month</option>
-            <option value="1" {% if selected_month == "1" %}selected{% endif %}>January</option>
-            <option value="2" {% if selected_month == "2" %}selected{% endif %}>February</option>
-            <option value="3" {% if selected_month == "3" %}selected{% endif %}>March</option>
-            <option value="4" {% if selected_month == "4" %}selected{% endif %}>April</option>
-            <option value="5" {% if selected_month == "5" %}selected{% endif %}>May</option>
-            <option value="6" {% if selected_month == "6" %}selected{% endif %}>June</option>
-            <option value="7" {% if selected_month == "7" %}selected{% endif %}>July</option>
-            <option value="8" {% if selected_month == "8" %}selected{% endif %}>August</option>
-            <option value="9" {% if selected_month == "9" %}selected{% endif %}>September</option>
-            <option value="10" {% if selected_month == "10" %}selected{% endif %}>October</option>
-            <option value="11" {% if selected_month == "11" %}selected{% endif %}>November</option>
-            <option value="12" {% if selected_month == "12" %}selected{% endif %}>December</option>
-        </select>
+    <form method="get" class="schedule-filter-form">
+        <div class="form-group">
+            <label for="year">Year</label>
+            <input type="number" id="year" name="year" class="form-control" min="2000" max="2100" value="{{ selected_year }}">
+        </div>
 
-        <label for="day">Day</label>
-        <input type="number" id="day" name="day" min="1" max="31" value="{{ selected_day }}">
+        <div class="form-group">
+            <label for="month">Month</label>
+            <select id="month" name="month" class="form-control">
+                <option value="">Any month</option>
+                <option value="1" {% if selected_month == "1" %}selected{% endif %}>January</option>
+                <option value="2" {% if selected_month == "2" %}selected{% endif %}>February</option>
+                <option value="3" {% if selected_month == "3" %}selected{% endif %}>March</option>
+                <option value="4" {% if selected_month == "4" %}selected{% endif %}>April</option>
+                <option value="5" {% if selected_month == "5" %}selected{% endif %}>May</option>
+                <option value="6" {% if selected_month == "6" %}selected{% endif %}>June</option>
+                <option value="7" {% if selected_month == "7" %}selected{% endif %}>July</option>
+                <option value="8" {% if selected_month == "8" %}selected{% endif %}>August</option>
+                <option value="9" {% if selected_month == "9" %}selected{% endif %}>September</option>
+                <option value="10" {% if selected_month == "10" %}selected{% endif %}>October</option>
+                <option value="11" {% if selected_month == "11" %}selected{% endif %}>November</option>
+                <option value="12" {% if selected_month == "12" %}selected{% endif %}>December</option>
+            </select>
+        </div>
 
-        <button type="submit">Apply</button>
-        <a href="{% url 'schedule' %}">Clear</a>
+        <div class="form-group">
+            <label for="day">Day</label>
+            <input type="number" id="day" name="day" class="form-control" min="1" max="31" value="{{ selected_day }}">
+        </div>
+
+        <div class="schedule-filter-actions">
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="{% url 'schedule' %}" class="btn btn-secondary">Clear</a>
+        </div>
     </form>
+</div>
+
+<div class="card">
+    <div class="section-header">
+        <div>
+            <h2>All Appointments</h2>
+            <p>Every appointment matching your filters, soonest first.</p>
+        </div>
+    </div>
 
     {% if appointments %}
-        <ul>
-            {% for appointment in appointments %}
-                <li>
-                    <strong>{{ appointment.title }}</strong>
-                    - {{ appointment.date }}
-                    at {{ appointment.start_time }}
-                    {% if appointment.end_time %} to {{ appointment.end_time }}{% endif %}
-                    - {{ appointment.get_status_display }}
-                    <br>
-                    Client:
-                    <a href="{% url 'client_detail' appointment.client.id %}">
-                        {{ appointment.client.name }}
-                    </a>
-                    {% if appointment.notes %}
-                        <br>
-                        Notes: {{ appointment.notes }}
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
+        <div class="responsive-table">
+            <table class="payment-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Title</th>
+                        <th>Client</th>
+                        <th>Status</th>
+                        <th class="amount-cell">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in appointments %}
+                        <tr class="clickable-row" data-href="{% url 'edit_appointment' appointment.id %}" tabindex="0">
+                            <td>{{ appointment.date|date:"M j, Y" }}</td>
+                            <td>
+                                {{ appointment.start_time|time:"g:i A" }}{% if appointment.end_time %} - {{ appointment.end_time|time:"g:i A" }}{% endif %}
+                            </td>
+                            <td><strong>{{ appointment.title }}</strong>
+                                {% if appointment.notes %}
+                                    <span>{{ appointment.notes }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'client_detail' appointment.client.id %}">{{ appointment.client.name }}</a>
+                            </td>
+                            <td>
+                                <span class="badge {% if appointment.status == 'completed' %}badge-success{% elif appointment.status == 'cancelled' %}badge-danger{% elif appointment.status == 'rescheduled' %}badge-warning{% endif %}">
+                                    {{ appointment.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="amount-cell">${{ appointment.price|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% else %}
-        <p>No appointments scheduled yet.</p>
+        <div class="empty-state">
+            <h3>No appointments scheduled yet</h3>
+            <p>Appointments will appear here once you add one for a client.</p>
+            <a href="{% url 'add_appointment_global' %}" class="btn btn-secondary">Add Appointment</a>
+        </div>
     {% endif %}
+</div>
 {% endblock %}

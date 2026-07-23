@@ -135,7 +135,6 @@ def save_appointment_for_client(form, client, user):
     sync_payment_for_appointment(appointment)
     return appointment
 
-
 @login_required
 def add_client(request):
     if request.method == "POST":
