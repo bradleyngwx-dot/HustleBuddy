@@ -27,6 +27,15 @@ class DashboardViewTest(TestCase):
         self.assertIn("/login", response["Location"])
 
     @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
+    def test_dashboard_cards_link_to_related_pages(self, mock_localdate):
+        response = self.http.get(reverse("dashboard"))
+
+        self.assertContains(response, f'href="{reverse("payment_list")}"')
+        self.assertContains(response, 'href="#payments"')
+        self.assertContains(response, f'href="{reverse("time_log_list")}"')
+        self.assertContains(response, f'href="{reverse("schedule")}"')
+
+    @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
     def test_dashboard_displays_summary_metrics(self, mock_localdate):
         TimeLog.objects.create(
             client=self.client_obj,
@@ -83,8 +92,12 @@ class DashboardViewTest(TestCase):
         self.assertEqual(response.context["total_hours_this_month"], Decimal("5.00"))
         self.assertEqual(response.context["total_paid_this_month"], Decimal("500.00"))
         self.assertEqual(response.context["effective_hourly_rate"], Decimal("100.00"))
+        self.assertEqual(response.context["period_revenue"], Decimal("500.00"))
+        self.assertEqual(response.context["period_outstanding"], Decimal("200.00"))
+        self.assertEqual(response.context["period_hours"], Decimal("5.00"))
         self.assertEqual(response.context["completed_but_unpaid"], Decimal("200.00"))
         self.assertEqual(response.context["upcoming_revenue"], Decimal("400.00"))
+        self.assertEqual(response.context["unpaid_payment_count"], 1)
         self.assertEqual(response.context["appointments_today"].count(), 1)
         self.assertEqual(response.context["upcoming_appointments"].count(), 2)
 
@@ -118,9 +131,14 @@ class DashboardViewTest(TestCase):
         self.assertEqual(response.context["total_hours_this_month"], Decimal("0"))
         self.assertEqual(response.context["total_paid_this_month"], Decimal("0"))
         self.assertEqual(response.context["effective_hourly_rate"], Decimal("0"))
+        self.assertEqual(response.context["period_revenue"], Decimal("0"))
+        self.assertEqual(response.context["period_outstanding"], Decimal("0"))
+        self.assertEqual(response.context["period_hours"], Decimal("0"))
         self.assertEqual(response.context["upcoming_revenue"], Decimal("0"))
+        self.assertEqual(response.context["period_appointment_count"], 0)
         self.assertEqual(response.context["appointments_today"].count(), 0)
         self.assertEqual(response.context["upcoming_appointments"].count(), 0)
+        self.assertNotContains(response, "Other User Appointment")
 
     @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
     def test_dashboard_chart_data_defaults_to_past_three_months(self, mock_localdate):
@@ -159,15 +177,24 @@ class DashboardViewTest(TestCase):
 
         response = self.http.get(reverse("dashboard"))
 
+        self.assertEqual(response.context["selected_period"], "3")
+        self.assertEqual(response.context["selected_period_label"], "Past 3 months")
         self.assertEqual(response.context["selected_hours_range"], "3")
         self.assertEqual(response.context["chart_data"]["labels"], ["May 26", "Jun 26", "Jul 26"])
         self.assertEqual(response.context["chart_data"]["hours"], [1.0, 2.0, 3.0])
         self.assertEqual(response.context["chart_data"]["paid"], [100.0, 0.0, 300.0])
+        self.assertContains(response, "https://cdn.jsdelivr.net/npm/chart.js")
+        self.assertContains(response, "dashboard-chart-data")
+        self.assertContains(response, "payment-pie-data")
+        self.assertContains(response, "hoursChart")
+        self.assertContains(response, "paymentPieChart")
 
     @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
     def test_dashboard_accepts_twelve_month_chart_range(self, mock_localdate):
-        response = self.http.get(reverse("dashboard"), {"hours_range": "12"})
+        response = self.http.get(reverse("dashboard"), {"period": "12"})
 
+        self.assertEqual(response.context["selected_period"], "12")
+        self.assertEqual(response.context["selected_period_label"], "Past 12 months")
         self.assertEqual(response.context["selected_hours_range"], "12")
         self.assertEqual(len(response.context["chart_data"]["labels"]), 12)
         self.assertEqual(response.context["chart_data"]["labels"][0], "Aug 25")
@@ -175,10 +202,50 @@ class DashboardViewTest(TestCase):
 
     @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
     def test_dashboard_invalid_chart_range_falls_back_to_three_months(self, mock_localdate):
-        response = self.http.get(reverse("dashboard"), {"hours_range": "99"})
+        response = self.http.get(reverse("dashboard"), {"period": "99"})
 
+        self.assertEqual(response.context["selected_period"], "3")
         self.assertEqual(response.context["selected_hours_range"], "3")
         self.assertEqual(len(response.context["chart_data"]["labels"]), 3)
+
+    @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
+    def test_dashboard_month_filter_uses_selected_period(self, mock_localdate):
+        TimeLog.objects.create(
+            client=self.client_obj,
+            date=date(2026, 6, 10),
+            hours=Decimal("2.00"),
+            description="June work",
+        )
+        TimeLog.objects.create(
+            client=self.client_obj,
+            date=date(2026, 7, 10),
+            hours=Decimal("3.00"),
+            description="July work",
+        )
+        Payment.objects.create(
+            client=self.client_obj,
+            amount=Decimal("100.00"),
+            date_issued=date(2026, 6, 1),
+            date_paid=date(2026, 6, 7),
+            status="paid",
+        )
+        Payment.objects.create(
+            client=self.client_obj,
+            amount=Decimal("200.00"),
+            date_issued=date(2026, 7, 1),
+            date_paid=date(2026, 7, 7),
+            status="paid",
+        )
+
+        response = self.http.get(reverse("dashboard"), {"period": "1"})
+
+        self.assertEqual(response.context["selected_period"], "1")
+        self.assertEqual(response.context["selected_period_label"], "This month")
+        self.assertEqual(response.context["period_hours"], Decimal("3.00"))
+        self.assertEqual(response.context["period_revenue"], Decimal("200.00"))
+        self.assertEqual(response.context["chart_data"]["labels"], ["Jul 26"])
+        self.assertEqual(response.context["chart_data"]["hours"], [3.0])
+        self.assertEqual(response.context["chart_data"]["paid"], [200.0])
 
     @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
     def test_dashboard_payment_pie_data_groups_status_totals(self, mock_localdate):
@@ -206,6 +273,7 @@ class DashboardViewTest(TestCase):
 
         self.assertEqual(response.context["payment_pie_data"]["labels"], ["Paid", "Outstanding", "Overdue"])
         self.assertEqual(response.context["payment_pie_data"]["values"], [300.0, 150.0, 50.0])
+        self.assertEqual(response.context["payment_chart_total"], Decimal("500"))
 
     @patch("core.views.timezone.localdate", return_value=date(2026, 7, 15))
     def test_dashboard_calculates_average_days_to_payment(self, mock_localdate):
