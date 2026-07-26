@@ -1,6 +1,6 @@
 from datetime import date, time
 from decimal import Decimal
-
+from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.test import Client as HttpClient, TestCase
 from django.urls import reverse
@@ -124,7 +124,8 @@ class AppointmentViewTest(TestCase):
         self.assertEqual(appointment.title, "Consultation")
         self.assertEqual(appointment.price, Decimal("150.00"))
 
-    def test_completed_appointment_creates_time_log_and_payment(self):
+    @patch("core.views.timezone.localdate",return_value=date(2026, 7, 15))
+    def test_completed_appointment_creates_time_log_and_payment(self,mock_localdate):
         response = self.http.post(reverse("add_appointment", args=[self.client_obj.id]), {
             "title": "Strategy Session",
             "date": "2026-07-15",
